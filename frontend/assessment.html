@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Time Assessment | ScreenHealth AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ===== GLOBAL STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --text-dark: #333;
+            --text-light: #666;
+            --bg-light: #f8f9fa;
+            --shadow: 0 10px 30px rgba(0,0,0,0.1);
+            --radius: 12px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding-top: 70px;
+        }
+
+        /* ===== NAVIGATION ===== */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            text-decoration: none;
+        }
+
+        .logo i {
+            color: var(--primary-color);
+        }
+
+        .ai-text {
+            color: var(--primary-color);
+            font-weight: 800;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-light);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary-color);
+        }
+
+        .hamburger {
+            display: none;
+            cursor: pointer;
+        }
+
+        .bar {
+            display: block;
+            width: 25px;
+            height: 3px;
+            margin: 5px auto;
+            transition: all 0.3s ease;
+            background-color: var(--text-dark);
+        }
+
+        /* ===== MAIN CONTAINER ===== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: var(--text-light);
+            font-size: 1.1em;
+        }
+
+        /* ===== PROGRESS BAR ===== */
+        .progress-container {
+            background: #f0f0f0;
+            border-radius: 50px;
+            height: 8px;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 50px;
+            transition: width 0.5s ease;
+            width: 25%;
+        }
+
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            color: var(--text-light);
+            font-size: 0.9em;
+        }
+
+        /* ===== FORM LAYOUT ===== */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== CARDS ===== */
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+        }
+
+        .card h2 {
+            color: var(--text-dark);
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* ===== FORM GROUPS ===== */
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 1em;
+        }
+
+        .form-group select {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            color: var(--text-dark);
+            background: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* ===== SLIDER STYLES ===== */
+        .slider-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #eee;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .slider-label span {
+            font-weight: bold;
+            color: var(--primary-color);
+            min-width: 30px;
+            text-align: center;
+            background: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 2px solid var(--primary-color);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 10px;
+            -webkit-appearance: none;
+            background: #e0e0e0;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        /* ===== BUTTONS ===== */
+        .submit-section {
+            grid-column: 1 / -1;
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            margin-top: 30px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            font-size: 1.2em;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            body {
+                padding-top: 60px;
+            }
+            
+            .hamburger {
+                display: block;
+            }
+            
+            .nav-menu {
+                position: fixed;
+                left: -100%;
+                top: 70px;
+                flex-direction: column;
+                background: white;
+                width: 100%;
+                text-align: center;
+                transition: 0.3s;
+                box-shadow: 0 10px 27px rgba(0,0,0,0.05);
+                padding: 20px 0;
+                gap: 0;
+            }
+            
+            .nav-menu.active {
+                left: 0;
+            }
+            
+            .nav-menu li {
+                margin: 15px 0;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+
+        /* Mobile Navigation Animation */
+        .hamburger.active .bar:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active .bar:nth-child(1) {
+            transform: translateY(8px) rotate(45deg);
+        }
+
+        .hamburger.active .bar:nth-child(3) {
+            transform: translateY(-8px) rotate(-45deg);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-brain"></i>
+                <span>ScreenHealth<span class="ai-text">AI</span></span>
+            </a>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="assessment.html" class="nav-link active"><i class="fas fa-clipboard-check"></i> Assessment</a></li>
+                <!-- <li><a href="#help" class="nav-link"><i class="fas fa-question-circle"></i> Help</a></li> -->
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div style="text-align: left;">
+                    <h1><i class="fas fa-clipboard-check"></i> Screen Time Assessment</h1>
+                    <p>Complete this 5-minute questionnaire for personalized analysis</p>
+                </div>
+                <div style="background: #f8f9fa; padding: 10px 20px; border-radius: 50px; font-weight: 600; color: var(--primary-color);">
+                    <i class="fas fa-clock"></i> 5 min
+                </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-steps">
+                <span>Profile</span>
+                <span>Screen Time</span>
+                <span>Sleep & Wellness</span>
+                <span>Mental Well-being</span>
+            </div>
+        </div>
+
+        <!-- Assessment Form -->
+        <form id="assessmentForm" onsubmit="return submitAssessment(event)">
+            <div class="main-content">
+                <!-- Column 1: User Profile -->
+                <div class="card">
+                    <h2><i class="fas fa-user"></i> User Profile</h2>
+                    <div class="form-group">
+                        <label for="ageGroup">Age Group</label>
+                        <select id="ageGroup" required>
+                            <option value="">Select age group</option>
+                            <option>18–24</option>
+                            <option>25–34</option>
+                            <option>35–44</option>
+                            <option>45–54</option>
+                            <option>55+</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="gender">Gender</label>
+                        <select id="gender" required>
+                            <option value="">Select gender</option>
+                            <option>Male</option>
+                            <option>Female</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="occupation">Occupation</label>
+                        <select id="occupation" required>
+                            <option value="">Select occupation</option>
+                            <option>Student</option>
+                            <option>Employed</option>
+                            <option>Self-employed</option>
+                            <option>Unemployed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="field">Field</label>
+                        <select id="field" required>
+                            <option value="">Select field</option>
+                            <option>IT</option>
+                            <option>Non-IT</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Column 2: Screen Time Usage -->
+                <div class="card">
+                    <h2><i class="fas fa-desktop"></i> Screen Time Usage</h2>
+                    <div class="form-group">
+                        <label for="totalScreenTime">Average Total Screen Time</label>
+                        <select id="totalScreenTime" required>
+                            <option value="">Select screen time</option>
+                            <option>Less than 1 hour</option>
+                            <option>1–2 hours</option>
+                            <option>3–4 hours</option>
+                            <option>5–6 hours</option>
+                            <option>More than 6 hours</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="socialMedia">Social Media Usage</label>
+                        <select id="socialMedia" required>
+                            <option value="">Select social media time</option>
+                            <option>Less than 1 hour</option>
+                            <option>1–2 hours</option>
+                            <option>3–4 hours</option>
+                            <option>5–6 hours</option>
+                            <option>More than 6 hours</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="workTime">Work/Education Time</label>
+                        <select id="workTime" required>
+                            <option value="">Select Work/Education Time</option>
+                            <option>Less than 1 hour</option>
+                            <option>1–2 hours</option>
+                            <option>3–4 hours</option>
+                            <option>5–6 hours</option>
+                            <option>More than 6 hours</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="entertainment">Entertainment (Streaming/Gaming)</label>
+                        <select id="entertainment" required>
+                            <option value="">Select entertainment time</option>
+                            <option>Less than 1 hour</option>
+                            <option>1–2 hours</option>
+                            <option>3–4 hours</option>
+                            <option>5–6 hours</option>
+                            <option>More than 6 hours</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="device">Device Used Most</label>
+                        <select id="device" required>
+                            <option value="">Select primary device</option>
+                            <option>Smartphone</option>
+                            <option>Laptop/Desktop</option>
+                            <option>Tablet</option>
+                            <option>Smartphone, Laptop/Desktop</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Column 3: Sleep & Wellness -->
+                <div class="card">
+                    <h2><i class="fas fa-bed"></i> Sleep & Wellness</h2>
+                    <div class="form-group">
+                        <label for="sleepDuration">Sleep Duration (hours)</label>
+                        <select id="sleepDuration" required>
+                            <option value="">Select sleep duration</option>
+                            <option>Less than 5</option>
+                            <option>5–6</option>
+                            <option>6–7</option>
+                            <option>7–8</option>
+                            <option>More than 8</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="sleepQuality">Sleep Quality (1-Very poor, 5-Excellent)</label>
+                        <select id="sleepQuality" required>
+                            <option value="">Select sleep quality</option>
+                            <option>1</option>
+                            <option>2</option>
+                            <option>3</option>
+                            <option>4</option>
+                            <option>5</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="screenBeforeSleep">Use Screen Before Sleep</label>
+                        <select id="screenBeforeSleep" required>
+                            <option value="">Select frequency</option>
+                            <option>Never</option>
+                            <option>Rarely</option>
+                            <option>Sometimes</option>
+                            <option>Often</option>
+                            <option>Always</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="exercise">Exercise Frequency</label>
+                        <select id="exercise" required>
+                            <option value="">Select exercise frequency</option>
+                            <option>Never</option>
+                            <option>1–2 days per week</option>
+                            <option>3–4 days per week</option>
+                            <option>Daily</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Column 4: Mental Well-being -->
+                <div class="card">
+                    <h2><i class="fas fa-heart"></i> Mental Well-being</h2>
+                    <div class="slider-container">
+                        <div class="form-group">
+                            <div class="slider-label">
+                                <label for="stress">Stress Due to Screen Usage</label>
+                                <span id="stressValue">3</span>
+                            </div>
+                            <input type="range" id="stress" min="1" max="5" value="3" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="slider-label">
+                                <label for="anxious">Anxious Without Device</label>
+                                <span id="anxiousValue">3</span>
+                            </div>
+                            <input type="range" id="anxious" min="1" max="5" value="3" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="slider-label">
+                                <label for="eyeStrain">Eye Strain or Headache</label>
+                                <span id="eyeStrainValue">3</span>
+                            </div>
+                            <input type="range" id="eyeStrain" min="1" max="5" value="3" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label for="addicted">Feel Addicted to Devices</label>
+                        <select id="addicted" required>
+                            <option value="">Select your feeling</option>
+                            <option>No</option>
+                            <option>Not sure</option>
+                            <option>Maybe</option>
+                            <option>Yes</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="submit-section">
+                <h2 style="border: none; margin-bottom: 15px; color: var(--text-dark);">
+                    <i class="fas fa-robot"></i> Ready for AI Analysis?
+                </h2>
+                <p style="color: var(--text-light); margin-bottom: 25px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                    Our machine learning model will analyze your responses and provide personalized recommendations for better digital wellness.
+                </p>
+                <button type="submit" class="btn">
+                    <i class="fas fa-play-circle"></i> Analyze My Screen Habits
+                </button>
+                <p style="margin-top: 20px; color: #888; font-size: 0.9em;">
+                    <i class="fas fa-lock"></i> Your responses are anonymous and confidential
+                </p>
+            </div>
+        </form>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Mobile Navigation Toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const hamburger = document.querySelector(".hamburger");
+            const navMenu = document.querySelector(".nav-menu");
+            
+            if (hamburger && navMenu) {
+                hamburger.addEventListener("click", () => {
+                    hamburger.classList.toggle("active");
+                    navMenu.classList.toggle("active");
+                });
+                
+                document.querySelectorAll(".nav-link").forEach(n => n.addEventListener("click", () => {
+                    hamburger.classList.remove("active");
+                    navMenu.classList.remove("active");
+                }));
+            }
+            
+            // Initialize progress bar
+            updateProgressBar();
+            
+            // Add event listeners to inputs
+            document.querySelectorAll('select, input[type="range"]').forEach(input => {
+                input.addEventListener('change', updateProgressBar);
+                input.addEventListener('input', updateProgressBar);
+            });
+            
+            // Initialize slider values
+            document.getElementById('stress').addEventListener('input', function() {
+                document.getElementById('stressValue').textContent = this.value;
+                updateProgressBar();
+            });
+            
+            document.getElementById('anxious').addEventListener('input', function() {
+                document.getElementById('anxiousValue').textContent = this.value;
+                updateProgressBar();
+            });
+            
+            document.getElementById('eyeStrain').addEventListener('input', function() {
+                document.getElementById('eyeStrainValue').textContent = this.value;
+                updateProgressBar();
+            });
+        });
+
+        // Update progress bar
+        function updateProgressBar() {
+            const inputs = document.querySelectorAll('select, input[type="range"]');
+            let filled = 0;
+            
+            inputs.forEach(input => {
+                if (input.type === 'range') {
+                    if (input.value !== '3') filled++;
+                } else if (input.value !== '') {
+                    filled++;
+                }
+            });
+            
+            const progress = (filled / inputs.length) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+            
+            // Change color based on progress
+            if (progress < 25) {
+                document.getElementById('progressBar').style.background = '#ff6b6b';
+            } else if (progress < 50) {
+                document.getElementById('progressBar').style.background = '#ffa726';
+            } else if (progress < 75) {
+                document.getElementById('progressBar').style.background = '#29b6f6';
+            } else {
+                document.getElementById('progressBar').style.background = 'linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%)';
+            }
+        }
+
+        // Form Submission
+        function submitAssessment(event) {
+            event.preventDefault();
+            
+            // Collect form data
+            const formData = {
+                ageGroup: document.getElementById('ageGroup').value,
+                gender: document.getElementById('gender').value,
+                occupation: document.getElementById('occupation').value,
+                field: document.getElementById('field').value,
+                totalScreenTime: document.getElementById('totalScreenTime').value,
+                socialMedia: document.getElementById('socialMedia').value,
+                workTime: document.getElementById('workTime').value,  // ← ADD THIS LINE
+                entertainment: document.getElementById('entertainment').value,
+                device: document.getElementById('device').value,
+                sleepDuration: document.getElementById('sleepDuration').value,
+                sleepQuality: parseInt(document.getElementById('sleepQuality').value),
+                screenBeforeSleep: document.getElementById('screenBeforeSleep').value,
+                exercise: document.getElementById('exercise').value,
+                stress: parseInt(document.getElementById('stress').value),
+                anxious: parseInt(document.getElementById('anxious').value),
+                eyeStrain: parseInt(document.getElementById('eyeStrain').value),
+                addicted: document.getElementById('addicted').value
+            };
+            
+            // Validate all fields
+            for (const key in formData) {
+                if (!formData[key] && formData[key] !== 0) {
+                    alert(`Please fill in all fields. Missing: ${key}`);
+                    return false;
+                }
+            }
+            
+            // Show loading
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+            submitBtn.disabled = true;
+            
+            // Simulate API call (in production, this would call your backend)
+            setTimeout(() => {
+                // Save data to localStorage for results page
+                localStorage.setItem('assessmentData', JSON.stringify(formData));
+                
+                // Calculate prediction (simulated)
+                const prediction = predictMentalHealth(formData);
+                localStorage.setItem('assessmentResults', JSON.stringify(prediction));
+                
+                // Redirect to results page
+                window.location.href = 'results.html';
+            }, 1500);
+            
+            return false;
+        }
+
+        // Prediction function (same as before)
+        function predictMentalHealth(data) {
+            let riskScore = 0;
+
+            // Screen time risk
+            const screenTimeMap = {
+                'Less than 1 hour': 0, 
+                '1–2 hours': 1, 
+                '3–4 hours': 2, 
+                '5–6 hours': 3, 
+                'More than 6 hours': 4
+            };
+            
+            riskScore += screenTimeMap[data.totalScreenTime] * 5;
+            riskScore += screenTimeMap[data.socialMedia] * 3;
+            riskScore += screenTimeMap[data.entertainment] * 2;
+
+            // Sleep risk
+            const sleepMap = {
+                'Less than 5': 4, 
+                '5–6': 3, 
+                '6–7': 2, 
+                '7–8': 1, 
+                'More than 8': 1
+            };
+            
+            riskScore += sleepMap[data.sleepDuration] * 3;
+            riskScore += (5 - data.sleepQuality) * 2;
+
+            // Behavioral risk
+            riskScore += data.stress * 2;
+            riskScore += data.anxious * 2;
+            riskScore += data.eyeStrain;
+
+            // Exercise benefit
+            const exerciseMap = {
+                'Never': 4, 
+                '1–2 days per week': 3, 
+                '3–4 days per week': 1, 
+                'Daily': 0
+            };
+            
+            riskScore += exerciseMap[data.exercise] * 2;
+
+            const isHealthy = riskScore < 50;
+            const confidence = 0.85 + Math.random() * 0.1;
+            
+            return {
+                isHealthy: isHealthy,
+                riskScore: riskScore,
+                confidence: confidence,
+                screenIndex: Math.min(100, riskScore * 1.5),
+                sleepHealth: Math.max(0, 100 - riskScore * 0.8),
+                wellbeingScore: Math.max(0, 100 - riskScore * 1.2)
+            };
+        }
+    </script>
+</body>
+</html>

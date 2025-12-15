@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Results | ScreenHealth AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ===== GLOBAL STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #11998e;
+            --warning-color: #eb3349;
+            --text-dark: #333;
+            --text-light: #666;
+            --bg-light: #f8f9fa;
+            --shadow: 0 10px 30px rgba(0,0,0,0.1);
+            --radius: 12px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+            padding-top: 70px;
+        }
+
+        /* ===== NAVIGATION ===== */
+        .navbar {
+            background: white;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            text-decoration: none;
+        }
+
+        .logo i {
+            color: var(--primary-color);
+        }
+
+        .ai-text {
+            color: var(--primary-color);
+            font-weight: 800;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-light);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary-color);
+        }
+
+        /* ===== CONTAINERS ===== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* ===== RESULTS HEADER ===== */
+        .results-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .results-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="2" fill="white" opacity="0.1"/></svg>');
+        }
+
+        .results-header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .results-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background: white;
+            color: var(--primary-color);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        /* ===== METRIC CARDS ===== */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 25px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .metric-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .metric-card h3 {
+            color: var(--text-dark);
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .metric-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        /* ===== CHARTS SECTION ===== */
+        .charts-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-container {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .chart-container h2 {
+            color: var(--text-dark);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* ===== RECOMMENDATIONS ===== */
+        .recommendations-section {
+            background: white;
+            padding: 40px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 40px;
+        }
+
+        .recommendations-section h2 {
+            color: var(--text-dark);
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .recommendations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .recommendation-card {
+            background: var(--bg-light);
+            padding: 25px;
+            border-radius: var(--radius);
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .recommendation-card h3 {
+            color: var(--text-dark);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .recommendation-card ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .recommendation-card li {
+            padding: 8px 0;
+            color: var(--text-light);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .recommendation-card li:before {
+            content: "✓";
+            color: var(--success-color);
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        /* ===== ACTION BUTTONS ===== */
+        .action-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 30px;
+            border-radius: var(--radius);
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            gap: 10px;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+            min-width: 200px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* ===== WEEKLY PREVIEW SECTION ===== */
+        .weekly-preview-section {
+            background: white;
+            padding: 40px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 40px;
+            border: 2px dashed var(--primary-color);
+        }
+
+        .weekly-preview-section h2 {
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .preview-container {
+            background: var(--bg-light);
+            padding: 30px;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+        }
+
+        .preview-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .preview-header h3 {
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+
+        .preview-header p {
+            color: var(--text-light);
+        }
+
+        .preview-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .preview-card h4 {
+            color: var(--text-dark);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .preview-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .preview-metric {
+            text-align: center;
+        }
+
+        .preview-metric-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .preview-metric-label {
+            color: var(--text-light);
+            font-size: 0.9em;
+        }
+
+        .preview-tip {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .preview-challenge {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .preview-actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        /* ===== DOWNLOAD SECTION ===== */
+        .download-section {
+            background: white;
+            padding: 40px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .download-section h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .download-section p {
+            color: var(--text-light);
+            margin-bottom: 25px;
+            max-width: 600px;
+            margin: 0 auto 30px;
+        }
+
+        .download-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+        }
+
+        .signup-container {
+            margin-top: 40px;
+            padding: 30px;
+            background: var(--bg-light);
+            border-radius: var(--radius);
+        }
+
+        .signup-container h3 {
+            color: var(--text-dark);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .signup-container p {
+            color: var(--text-light);
+            margin-bottom: 20px;
+        }
+
+        .email-input-container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .email-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .email-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .privacy-note {
+            font-size: 0.85em;
+            color: #888;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            background: var(--text-dark);
+            color: white;
+            padding: 40px 0 20px;
+            margin-top: 60px;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .footer-logo i {
+            color: var(--primary-color);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 40px;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.9rem;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .results-header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .download-buttons {
+                flex-direction: column;
+            }
+            
+            .email-input-group {
+                flex-direction: column;
+            }
+            
+            .preview-metrics {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-brain"></i>
+                <span>ScreenHealth<span class="ai-text">AI</span></span>
+            </a>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="assessment.html" class="nav-link"><i class="fas fa-redo"></i> New Assessment</a></li>
+                <!-- <li><a href="#save" class="nav-link"><i class="fas fa-download"></i> Save Results</a></li> -->
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Results Header -->
+        <div class="results-header" id="resultsHeader">
+            <h1><i class="fas fa-chart-line"></i> Your Screen Health Analysis</h1>
+            <p id="resultDescription">Personalized insights based on your assessment responses</p>
+            <div class="status-badge" id="statusBadge">
+                <i class="fas fa-spinner fa-spin"></i> Analyzing...
+            </div>
+        </div>
+
+        <!-- Metrics Overview -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="fas fa-heartbeat"></i>
+                </div>
+                <h3>Overall Health Status</h3>
+                <div class="metric-value" id="overallHealth">-</div>
+                <div class="metric-label" id="healthLabel">Based on your assessment</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h3>Screen Time Risk</h3>
+                <div class="metric-value" id="screenRisk">-</div>
+                <div class="metric-label">Score out of 100</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="fas fa-bed"></i>
+                </div>
+                <h3>Sleep Health</h3>
+                <div class="metric-value" id="sleepHealth">-</div>
+                <div class="metric-label">Score out of 100</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <h3>Well-being Score</h3>
+                <div class="metric-value" id="wellbeingScore">-</div>
+                <div class="metric-label">Score out of 100</div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <div class="chart-container">
+                <h2><i class="fas fa-chart-pie"></i> Screen Time Distribution</h2>
+                <canvas id="usageChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h2><i class="fas fa-chart-line"></i> Health Metrics Overview</h2>
+                <canvas id="healthChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Recommendations Section -->
+        <div class="recommendations-section">
+            <h2><i class="fas fa-lightbulb"></i> Personalized Recommendations</h2>
+            
+            <div class="recommendations-grid" id="recommendationsGrid">
+                <!-- Recommendations will be inserted here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <!-- <button class="btn btn-primary" onclick="window.print()">
+                <i class="fas fa-print"></i> Print Report
+            </button> -->
+            <button class="btn btn-secondary" onclick="startNewAssessment()">
+                <i class="fas fa-redo"></i> New Assessment
+            </button>
+            <!-- <button class="btn btn-primary" onclick="shareResults()">
+                <i class="fas fa-share-alt"></i> Share Results
+            </button> -->
+        </div>
+
+        <!-- Weekly Preview Section -->
+        <div class="weekly-preview-section">
+            <h2><i class="fas fa-envelope-open-text"></i> Weekly Summary Preview</h2>
+            
+            <div class="preview-container">
+                <div class="preview-header">
+                    <h3>Your Weekly Screen Time Summary</h3>
+                    <p>Week ending <span id="weeklyDate">${new Date().toLocaleDateString()}</span></p>
+                </div>
+                
+                <div class="preview-card">
+                    <h4>📊 Weekly Metrics</h4>
+                    <div class="preview-metrics">
+                        <div class="preview-metric">
+                            <div class="preview-metric-value" id="weeklyScreenTime">-</div>
+                            <div class="preview-metric-label">Avg. Screen Time</div>
+                        </div>
+                        <div class="preview-metric">
+                            <div class="preview-metric-value" id="weeklyImprovement">-</div>
+                            <div class="preview-metric-label">Improvement</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="preview-tip">
+                    <h4>💡 This Week's Featured Tip</h4>
+                    <p id="weeklyTip" class="preview-text">
+                        Try implementing the "Digital Sunset" rule - no screens 1 hour before bed.
+                    </p>
+                </div>
+                
+                <div class="preview-challenge">
+                    <h4>🎯 Weekly Challenge</h4>
+                    <p id="weeklyChallenge" class="preview-text">
+                        Reduce social media usage by 30 minutes per day this week.
+                    </p>
+                </div>
+                
+                <div class="preview-actions">
+                    <button class="btn btn-primary" onclick="sendTestWeeklyEmail()" style="margin: 5px;">
+                        <i class="fas fa-paper-plane"></i> Send Test Email
+                    </button>
+                    <button class="btn btn-secondary" onclick="scheduleWeeklyEmails()" style="margin: 5px;">
+                        <i class="fas fa-calendar-alt"></i> Schedule Weekly
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Download Section -->
+        <div class="download-section">
+            <h2><i class="fas fa-download"></i> Download & Share Your Report</h2>
+            <p>Get a detailed PDF report or share your progress with friends and family</p>
+            
+            <div class="download-buttons">
+                <button class="btn btn-primary" onclick="downloadPDFReport()">
+                    <i class="fas fa-file-pdf"></i> Download PDF Report
+                </button>
+                <button class="btn btn-secondary" onclick="downloadTextReport()">
+                    <i class="fas fa-file-alt"></i> Download Text Summary
+                </button>
+                <button class="btn btn-primary" onclick="emailReport()">
+                    <i class="fas fa-envelope"></i> Email This Report
+                </button>
+            </div>
+            
+            <!-- Weekly Summary Signup -->
+            <div class="signup-container">
+                <h3><i class="fas fa-calendar-week"></i> Get Weekly Progress Updates</h3>
+                <p>Enter your email to receive weekly screen time analysis and improvement tips</p>
+                
+                <div class="email-input-container">
+                    <div class="email-input-group">
+                        <input type="email" id="weeklyEmail" placeholder="your.email@example.com" class="email-input">
+                        <button class="btn btn-primary" onclick="signupForWeeklyUpdates()" style="white-space: nowrap;">
+                            <i class="fas fa-paper-plane"></i> Subscribe
+                        </button>
+                    </div>
+                    <p class="privacy-note">
+                        <i class="fas fa-lock"></i> We'll never share your email. Unsubscribe anytime.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div>
+                <div class="footer-logo">
+                    <i class="fas fa-brain"></i>
+                    <span>ScreenHealth<span class="ai-text">AI</span></span>
+                </div>
+                <p>AI-powered digital wellness analysis for better mental health.</p>
+            </div>
+            <div>
+                <h4>Quick Links</h4>
+                <ul style="list-style: none; padding: 0;">
+                    <li><a href="index.html" style="color: #ccc; text-decoration: none;">Home</a></li>
+                    <li><a href="assessment.html" style="color: #ccc; text-decoration: none;">New Assessment</a></li>
+                    <!-- <li><a href="#research" style="color: #ccc; text-decoration: none;">Research</a></li> -->
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Results are generated based on machine learning analysis. For medical advice, consult a healthcare professional.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load assessment data from localStorage
+            const formData = JSON.parse(localStorage.getItem('assessmentData'));
+            const results = JSON.parse(localStorage.getItem('assessmentResults'));
+            
+            if (!formData || !results) {
+                // No data found, redirect to assessment
+                alert('No assessment data found. Please complete the assessment first.');
+                window.location.href = 'assessment.html';
+                return;
+            }
+            
+            // Display results
+            displayResults(formData, results);
+            
+            // Initialize charts
+            initializeCharts(formData, results);
+            
+            // Generate recommendations
+            generateRecommendations(formData, results);
+            
+            // Update weekly preview
+            updateWeeklyPreview();
+        });
+
+        function displayResults(formData, results) {
+            const header = document.getElementById('resultsHeader');
+            const badge = document.getElementById('statusBadge');
+            
+            if (results.isHealthy) {
+                // Healthy results
+                header.style.background = 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)';
+                document.getElementById('resultDescription').textContent = 
+                    'Great job! Your screen habits are healthy. Keep up the good work!';
+                badge.innerHTML = '<i class="fas fa-check-circle"></i> Healthy Habits';
+                document.getElementById('overallHealth').textContent = 'Good';
+                document.getElementById('healthLabel').textContent = 'Healthy screen habits';
+                document.getElementById('overallHealth').style.color = '#11998e';
+            } else {
+                // Needs improvement
+                header.style.background = 'linear-gradient(135deg, #eb3349 0%, #f45c43 100%)';
+                document.getElementById('resultDescription').textContent = 
+                    'Your screen habits may be affecting your mental health. Follow our recommendations below.';
+                badge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Needs Improvement';
+                document.getElementById('overallHealth').textContent = 'Needs Attention';
+                document.getElementById('healthLabel').textContent = 'Improvement recommended';
+                document.getElementById('overallHealth').style.color = '#eb3349';
+            }
+            
+            // Update metric values
+            document.getElementById('screenRisk').textContent = Math.round(results.screenIndex);
+            document.getElementById('sleepHealth').textContent = Math.round(results.sleepHealth);
+            document.getElementById('wellbeingScore').textContent = Math.round(results.wellbeingScore);
+            
+            // Color code metrics
+            const metrics = ['screenRisk', 'sleepHealth', 'wellbeingScore'];
+            metrics.forEach(metric => {
+                const value = parseInt(document.getElementById(metric).textContent);
+                const element = document.getElementById(metric);
+                
+                if (value >= 70) {
+                    element.style.color = '#11998e'; // Good
+                } else if (value >= 50) {
+                    element.style.color = '#ffa726'; // Moderate
+                } else {
+                    element.style.color = '#eb3349'; // Poor
+                }
+            });
+        }
+
+        function initializeCharts(formData, results) {
+            // Usage Chart (Doughnut)
+            const usageCtx = document.getElementById('usageChart');
+            new Chart(usageCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Social Media', 'Entertainment', 'Productivity', 'Other'],
+                    datasets: [{
+                        data: calculateUsageData(formData),
+                        backgroundColor: [
+                            '#667eea',
+                            '#764ba2',
+                            '#f093fb',
+                            '#4facfe'
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 20
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        }
+                    },
+                    cutout: '60%'
+                }
+            });
+            
+            // Health Chart (Radar)
+            const healthCtx = document.getElementById('healthChart');
+            new Chart(healthCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Sleep Quality', 'Stress Level', 'Eye Health', 'Addiction Risk', 'Exercise'],
+                    datasets: [{
+                        label: 'Your Scores',
+                        data: [
+                            formData.sleepQuality * 20,
+                            (5 - formData.stress) * 20,
+                            (5 - formData.eyeStrain) * 20,
+                            calculateAddictionRisk(formData.addicted),
+                            calculateExerciseScore(formData.exercise)
+                        ],
+                        backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                        borderColor: '#667eea',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20,
+                                backdropColor: 'transparent'
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            },
+                            pointLabels: {
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function calculateUsageData(formData) {
+            const map = {
+                'Less than 1 hour': 10,
+                '1–2 hours': 25,
+                '3–4 hours': 40,
+                '5–6 hours': 60,
+                'More than 6 hours': 80
+            };
+            
+            const social = map[formData.socialMedia] || 30;
+            const entertainment = map[formData.entertainment] || 25;
+            const productivity = map[formData.workTime] || 20;
+            const other = 100 - (social + entertainment + productivity);
+            
+            return [social, entertainment, productivity, Math.max(0, other)];
+        }
+
+        function calculateAddictionRisk(addicted) {
+            const map = {
+                'No': 90,
+                'Not sure': 60,
+                'Maybe': 40,
+                'Yes': 20
+            };
+            return map[addicted] || 50;
+        }
+
+        function calculateExerciseScore(exercise) {
+            const map = {
+                'Never': 20,
+                '1–2 days per week': 40,
+                '3–4 days per week': 70,
+                'Daily': 90
+            };
+            return map[exercise] || 50;
+        }
+
+        function generateRecommendations(formData, results) {
+            const container = document.getElementById('recommendationsGrid');
+            
+            const recommendations = [
+                {
+                    title: '💡 Wellness Tips',
+                    icon: 'fas fa-heart',
+                    items: generateWellnessTips(formData, results)
+                },
+                {
+                    title: '🔒 App Control',
+                    icon: 'fas fa-mobile-alt',
+                    items: generateAppControlTips(formData)
+                },
+                {
+                    title: '🧘 Mindfulness',
+                    icon: 'fas fa-spa',
+                    items: generateMindfulnessTips(formData)
+                },
+                {
+                    title: '😴 Sleep Hygiene',
+                    icon: 'fas fa-bed',
+                    items: generateSleepTips(formData)
+                }
+            ];
+            
+            container.innerHTML = recommendations.map(rec => `
+                <div class="recommendation-card">
+                    <h3><i class="${rec.icon}"></i> ${rec.title}</h3>
+                    <ul>
+                        ${rec.items.map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                </div>
+            `).join('');
+        }
+
+        function generateWellnessTips(formData, results) {
+            const tips = [];
+            
+            if (formData.totalScreenTime.includes('More than 6 hours') || formData.totalScreenTime.includes('5–6 hours')) {
+                tips.push('Reduce total screen time by 2 hours daily');
+                tips.push('Take a 10-minute break every 60 minutes');
+            } else {
+                tips.push('Maintain your current healthy screen time limits');
+            }
+            
+            if (formData.sleepQuality <= 2) {
+                tips.push('Improve sleep quality with evening relaxation routines');
+            }
+            
+            if (formData.exercise === 'Never') {
+                tips.push('Start with 20-minute walks, 3 times per week');
+            }
+            
+            tips.push('Practice the 20-20-20 rule for eye health');
+            tips.push('Establish device-free zones in your home');
+            
+            return tips;
+        }
+
+        function generateAppControlTips(formData) {
+            const tips = [];
+            
+            if (formData.socialMedia.includes('More than') || formData.socialMedia.includes('5–6')) {
+                tips.push('Set app timers: 30 minutes per social media app');
+                tips.push('Enable grayscale mode after 8 PM');
+                tips.push('Delete social media apps during work hours');
+            }
+            
+            tips.push('Turn off non-essential notifications');
+            tips.push('Schedule specific times for checking messages');
+            tips.push('Use focus mode during work/study hours');
+            
+            return tips;
+        }
+
+        function generateMindfulnessTips(formData) {
+            const tips = [];
+            
+            if (formData.stress >= 4 || formData.anxious >= 4) {
+                tips.push('Practice 10-minute guided meditation daily');
+                tips.push('Try box breathing during stressful moments');
+                tips.push('Take 5-minute nature breaks without devices');
+            } else {
+                tips.push('Maintain your current mindfulness practices');
+            }
+            
+            tips.push('Journal about your screen usage patterns');
+            tips.push('Practice digital gratitude - appreciate offline moments');
+            
+            return tips;
+        }
+
+        function generateSleepTips(formData) {
+            const tips = [];
+            
+            if (formData.screenBeforeSleep === 'Often' || formData.screenBeforeSleep === 'Always') {
+                tips.push('Stop all screens 1 hour before bedtime');
+                tips.push('Charge devices outside the bedroom');
+                tips.push('Read a physical book instead of scrolling');
+            }
+            
+            tips.push('Maintain consistent sleep schedule');
+            tips.push('Keep bedroom dark, cool, and quiet');
+            tips.push('Avoid caffeine 6 hours before sleep');
+            
+            return tips;
+        }
+
+        function startNewAssessment() {
+            window.location.href = 'assessment.html';
+        }
+
+        function shareResults() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'My Screen Health Analysis',
+                    text: 'Check out my screen health analysis from ScreenHealth AI!',
+                    url: window.location.href
+                });
+            } else {
+                // Fallback
+                navigator.clipboard.writeText(window.location.href);
+                alert('Results link copied to clipboard!');
+            }
+        }
+
+        // Update weekly preview
+        function updateWeeklyPreview() {
+            const formData = JSON.parse(localStorage.getItem('assessmentData'));
+            const results = JSON.parse(localStorage.getItem('assessmentResults'));
+            
+            if (!formData || !results) return;
+            
+            // Calculate weekly metrics
+            const screenTimeMap = {
+                'Less than 1 hour': '1h',
+                '1–2 hours': '1.5h',
+                '3–4 hours': '3.5h',
+                '5–6 hours': '5.5h',
+                'More than 6 hours': '7h+'
+            };
+            
+            document.getElementById('weeklyScreenTime').textContent = 
+                screenTimeMap[formData.totalScreenTime] || '-';
+            
+            document.getElementById('weeklyImprovement').textContent = 
+                results.isHealthy ? 'Good' : 'Needed';
+            
+            // Generate weekly tip
+            const tips = [
+                "Try implementing the 'Digital Sunset' rule - no screens 1 hour before bed",
+                "Practice the 20-20-20 rule to reduce eye strain",
+                "Schedule device-free meals for better family connection",
+                "Use app timers to limit social media usage",
+                "Take a 10-minute walk after every 2 hours of screen time"
+            ];
+            
+            const challenges = [
+                "Reduce social media usage by 30 minutes per day this week",
+                "Implement one device-free zone in your home",
+                "Try a digital detox for 24 hours this weekend",
+                "Practice 10 minutes of mindfulness meditation daily",
+                "Replace 1 hour of screen time with physical activity"
+            ];
+            
+            const randomTip = tips[Math.floor(Math.random() * tips.length)];
+            const randomChallenge = challenges[Math.floor(Math.random() * challenges.length)];
+            
+            document.getElementById('weeklyTip').textContent = randomTip;
+            document.getElementById('weeklyChallenge').textContent = randomChallenge;
+            
+            // Update date
+            const nextWeek = new Date();
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            document.getElementById('weeklyDate').textContent = nextWeek.toLocaleDateString();
+        }
+
+        function sendTestWeeklyEmail() {
+            const email = prompt('Enter email to send test weekly summary:');
+            if (!email || !email.includes('@')) {
+                alert('Please enter a valid email');
+                return;
+            }
+            
+            alert(`Test weekly summary would be sent to ${email}\n\nIn production, this would trigger your backend email system.`);
+        }
+
+        function scheduleWeeklyEmails() {
+            alert('Weekly emails scheduled!\n\nYou will receive a weekly summary every Monday at 9 AM.');
+        }
+        
+        // Download PDF Report
+        function downloadPDFReport() {
+            // In a real system, this would generate a PDF server-side
+            // For demo, we'll create a HTML page that can be printed as PDF
+            
+            const formData = JSON.parse(localStorage.getItem('assessmentData'));
+            const results = JSON.parse(localStorage.getItem('assessmentResults'));
+            
+            if (!formData || !results) {
+                alert('No data available to download');
+                return;
+            }
+            
+            const date = new Date().toLocaleDateString();
+            
+            const pdfContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Screen Health Analysis Report</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+                        .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #667eea; padding-bottom: 20px; }
+                        .metric { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; }
+                        .recommendation { margin: 15px 0; padding-left: 20px; border-left: 3px solid #667eea; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1 style="color: #667eea;">ScreenHealth AI Analysis Report</h1>
+                        <p>Generated on ${date}</p>
+                    </div>
+                    
+                    <h2>Assessment Summary</h2>
+                    <p><strong>Date:</strong> ${date}</p>
+                    <p><strong>Overall Status:</strong> ${results.isHealthy ? 'Healthy' : 'Needs Improvement'}</p>
+                    
+                    <h2>Key Metrics</h2>
+                    <div class="metric">
+                        <p><strong>Screen Time Risk:</strong> ${Math.round(results.screenIndex)}/100</p>
+                        <p><strong>Sleep Health:</strong> ${Math.round(results.sleepHealth)}/100</p>
+                        <p><strong>Well-being Score:</strong> ${Math.round(results.wellbeingScore)}/100</p>
+                    </div>
+                    
+                    <h2>Personalized Recommendations</h2>
+                    ${generatePDFRecommendations(formData, results)}
+                    
+                    <div style="margin-top: 40px; font-size: 0.9em; color: #666; text-align: center;">
+                        <p>Report generated by ScreenHealth AI - Digital Wellness Analysis System</p>
+                        <p>For research purposes only. Consult healthcare professionals for medical advice.</p>
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            // Open in new window for printing/saving as PDF
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(pdfContent);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        function generatePDFRecommendations(formData, results) {
+            const tips = [];
+            
+            // Wellness tips
+            if (formData.totalScreenTime.includes('More than 6 hours')) {
+                tips.push('Reduce total screen time by 2 hours daily');
+            }
+            if (formData.sleepQuality <= 2) {
+                tips.push('Improve sleep quality with evening relaxation routines');
+            }
+            if (formData.exercise === 'Never') {
+                tips.push('Start with 20-minute walks, 3 times per week');
+            }
+            
+            // Format as HTML
+            return tips.map(tip => `<div class="recommendation"><p>${tip}</p></div>`).join('');
+        }
+
+        // Download Text Report
+        function downloadTextReport() {
+            const formData = JSON.parse(localStorage.getItem('assessmentData'));
+            const results = JSON.parse(localStorage.getItem('assessmentResults'));
+            
+            if (!formData || !results) {
+                alert('No data available to download');
+                return;
+            }
+            
+            const date = new Date().toLocaleDateString();
+            const status = results.isHealthy ? 'Healthy' : 'Needs Improvement';
+            
+            const textContent = `
+        SCREENHEALTH AI ANALYSIS REPORT
+        ===============================
+        Generated: ${date}
+        Overall Status: ${status}
+
+        KEY METRICS:
+        ------------
+        • Screen Time Risk: ${Math.round(results.screenIndex)}/100
+        • Sleep Health: ${Math.round(results.sleepHealth)}/100
+        • Well-being Score: ${Math.round(results.wellbeingScore)}/100
+
+        ASSESSMENT SUMMARY:
+        -------------------
+        • Age Group: ${formData.ageGroup}
+        • Occupation: ${formData.occupation}
+        • Total Screen Time: ${formData.totalScreenTime}
+        • Social Media: ${formData.socialMedia}
+        • Sleep Quality: ${formData.sleepQuality}/5
+        • Stress Level: ${formData.stress}/5
+
+        PERSONALIZED RECOMMENDATIONS:
+        -----------------------------
+        ${generateTextRecommendations(formData)}
+
+        ACTION PLAN:
+        ------------
+        1. Review your screen time patterns
+        2. Implement recommended changes
+        3. Retake assessment in 2 weeks
+        4. Track progress regularly
+
+        NOTES:
+        ------
+        This report is for informational purposes only.
+        Consult healthcare professionals for medical advice.
+
+        ScreenHealth AI Research Project
+        https://screenhealth-ai.example.com
+            `;
+            
+            // Create download link
+            const blob = new Blob([textContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `screenhealth-report-${date.replace(/\//g, '-')}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function generateTextRecommendations(formData) {
+            const tips = [];
+            
+            if (formData.totalScreenTime.includes('More than 6 hours')) {
+                tips.push('• Reduce total screen time by 2 hours daily');
+            }
+            if (formData.socialMedia.includes('More than 6 hours')) {
+                tips.push('• Limit social media to 2 hours daily');
+            }
+            if (formData.sleepQuality <= 2) {
+                tips.push('• Improve sleep quality with bedtime routine');
+            }
+            if (formData.exercise === 'Never') {
+                tips.push('• Start exercising 3 times per week');
+            }
+            
+            tips.push('• Take regular breaks using 20-20-20 rule');
+            tips.push('• Establish device-free zones at home');
+            tips.push('• Practice digital sunset before bed');
+            
+            return tips.join('\n');
+        }
+
+        // Email Report
+        function emailReport() {
+            const email = prompt('Enter your email address to receive the report:');
+            
+            if (!email || !email.includes('@')) {
+                alert('Please enter a valid email address');
+                return;
+            }
+            
+            // In production, this would call your backend API
+            // For demo, we'll simulate it
+            
+            const loading = document.createElement('div');
+            loading.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); 
+                    display: flex; justify-content: center; align-items: center; z-index: 9999;">
+                    <div style="background: white; padding: 30px; border-radius: 10px; text-align: center;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 2em; color: #667eea; margin-bottom: 15px;"></i>
+                        <p>Sending report to ${email}...</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(loading);
+            
+            setTimeout(() => {
+                document.body.removeChild(loading);
+                alert(`Report sent successfully to ${email}!\n\n(In production, this would send an actual email)`);
+            }, 2000);
+        }
+
+        // Weekly Updates Signup
+        function signupForWeeklyUpdates() {
+            const emailInput = document.getElementById('weeklyEmail');
+            const email = emailInput.value.trim();
+            
+            if (!email || !email.includes('@')) {
+                alert('Please enter a valid email address');
+                emailInput.focus();
+                return;
+            }
+            
+            // Save to localStorage (in production, this would go to database)
+            const subscriptions = JSON.parse(localStorage.getItem('weeklySubscriptions') || '[]');
+            subscriptions.push({
+                email: email,
+                date: new Date().toISOString(),
+                assessmentData: JSON.parse(localStorage.getItem('assessmentData'))
+            });
+            
+            localStorage.setItem('weeklySubscriptions', JSON.stringify(subscriptions));
+            
+            // Show success message
+            emailInput.value = '';
+            
+            const successMsg = document.createElement('div');
+            successMsg.innerHTML = `
+                <div style="position: fixed; top: 20px; right: 20px; background: #11998e; color: white; 
+                    padding: 15px 25px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+                    z-index: 9999; animation: slideIn 0.3s ease;">
+                    <i class="fas fa-check-circle"></i> Subscribed successfully! You'll receive weekly updates.
+                </div>
+            `;
+            document.body.appendChild(successMsg);
+            
+            setTimeout(() => {
+                document.body.removeChild(successMsg);
+            }, 3000);
+        }
+
+        // Print functionality
+        window.print = function() {
+            const originalContent = document.body.innerHTML;
+            const printContent = document.querySelector('.container').innerHTML;
+            
+            document.body.innerHTML = `
+                <div style="padding: 40px; max-width: 800px; margin: 0 auto;">
+                    <h1 style="color: #667eea; text-align: center; margin-bottom: 30px;">
+                        <i class="fas fa-brain"></i> ScreenHealth AI Analysis Report
+                    </h1>
+                    ${printContent}
+                    <div style="text-align: center; margin-top: 40px; color: #666; font-size: 0.9em;">
+                        Generated on ${new Date().toLocaleDateString()}
+                    </div>
+                </div>
+            `;
+            
+            window.print();
+            document.body.innerHTML = originalContent;
+            location.reload();
+        };
+    </script>
+</body>
+</html>
