@@ -368,8 +368,10 @@
             </a>
             <ul class="nav-menu">
                 <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="dashboard.html" class="nav-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                 <li><a href="assessment.html" class="nav-link active"><i class="fas fa-clipboard-check"></i> Assessment</a></li>
-                <!-- <li><a href="#help" class="nav-link"><i class="fas fa-question-circle"></i> Help</a></li> -->
+                <li><a href="#" class="nav-link" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
             </ul>
             <div class="hamburger">
                 <span class="bar"></span>
@@ -411,6 +413,13 @@
                 <!-- Column 1: User Profile -->
                 <div class="card">
                     <h2><i class="fas fa-user"></i> User Profile</h2>
+                    <div class="form-group">
+                        <label for="email">Email (Optional - for progress tracking)</label>
+                        <input type="email" id="email" placeholder="your.email@example.com">
+                        <small style="color: #666; font-size: 0.9em;">
+                            <i class="fas fa-info-circle"></i> Providing your email allows us to track your progress over time
+                        </small>
+                    </div>
                     <div class="form-group">
                         <label for="ageGroup">Age Group</label>
                         <select id="ageGroup" required>
@@ -622,6 +631,25 @@
     <script>
         // Mobile Navigation Toggle
         document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in - REQUIRED for assessment
+            const userSession = localStorage.getItem('userSession');
+            if (!userSession) {
+                alert('Please login to take an assessment');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            const session = JSON.parse(userSession);
+            document.getElementById('email').value = session.email;
+            document.getElementById('email').readOnly = true;
+            
+            // Show welcome message for logged-in users
+            const emailGroup = document.getElementById('email').closest('.form-group');
+            const welcomeMsg = document.createElement('small');
+            welcomeMsg.style.color = 'var(--success-color)';
+            welcomeMsg.innerHTML = `<i class="fas fa-user-check"></i> Logged in as ${session.name}`;
+            emailGroup.appendChild(welcomeMsg);
+            
             const hamburger = document.querySelector(".hamburger");
             const navMenu = document.querySelector(".nav-menu");
             
@@ -697,13 +725,14 @@
             
             // Collect form data
             const formData = {
+                email: document.getElementById('email').value || null,
                 ageGroup: document.getElementById('ageGroup').value,
                 gender: document.getElementById('gender').value,
                 occupation: document.getElementById('occupation').value,
                 field: document.getElementById('field').value,
                 totalScreenTime: document.getElementById('totalScreenTime').value,
                 socialMedia: document.getElementById('socialMedia').value,
-                workTime: document.getElementById('workTime').value,  // ← ADD THIS LINE
+                workTime: document.getElementById('workTime').value,
                 entertainment: document.getElementById('entertainment').value,
                 device: document.getElementById('device').value,
                 sleepDuration: document.getElementById('sleepDuration').value,
@@ -716,9 +745,9 @@
                 addicted: document.getElementById('addicted').value
             };
             
-            // Validate all fields
+            // Validate all required fields (email is optional)
             for (const key in formData) {
-                if (!formData[key] && formData[key] !== 0) {
+                if (key !== 'email' && !formData[key] && formData[key] !== 0) {
                     alert(`Please fill in all fields. Missing: ${key}`);
                     return false;
                 }
@@ -730,20 +759,69 @@
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
             submitBtn.disabled = true;
             
-            // Simulate API call (in production, this would call your backend)
-            setTimeout(() => {
+            console.log('Submitting assessment data to backend:', formData);
+            
+            // Call backend API to save data and get prediction
+            fetch('http://localhost:5000/api/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_data: formData,
+                    email: formData.email
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(result => {
+                console.log('✅ Backend response:', result);
+                console.log('✅ Data saved to database successfully!');
+                
                 // Save data to localStorage for results page
                 localStorage.setItem('assessmentData', JSON.stringify(formData));
+                localStorage.setItem('assessmentResults', JSON.stringify(result));
                 
-                // Calculate prediction (simulated)
-                const prediction = predictMentalHealth(formData);
-                localStorage.setItem('assessmentResults', JSON.stringify(prediction));
+                // Show success message
+                alert('Assessment completed and saved to database!');
                 
                 // Redirect to results page
                 window.location.href = 'results.html';
-            }, 1500);
+            })
+            .catch(error => {
+                console.error('❌ Error calling backend:', error);
+                console.log('⚠️ Backend unavailable, using local calculation...');
+                
+                // Fallback to local calculation if backend fails
+                const prediction = predictMentalHealth(formData);
+                
+                // Save data to localStorage
+                localStorage.setItem('assessmentData', JSON.stringify(formData));
+                localStorage.setItem('assessmentResults', JSON.stringify(prediction));
+                
+                alert('Assessment completed (offline mode - not saved to database)');
+                
+                // Redirect to results page
+                window.location.href = 'results.html';
+            })
+            .finally(() => {
+                // Reset button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
             
             return false;
+        }
+        
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('userSession');
+                window.location.href = 'login.html';
+            }
         }
 
         // Prediction function (same as before)

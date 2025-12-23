@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Results | ScreenHealth AI</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* ===== GLOBAL STYLES ===== */
@@ -594,14 +595,13 @@
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
-            <a href="index.html" class="logo">
+            <a href="dashboard.html" class="logo">
                 <i class="fas fa-brain"></i>
                 <span>ScreenHealth<span class="ai-text">AI</span></span>
             </a>
             <ul class="nav-menu">
-                <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="dashboard.html" class="nav-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                 <li><a href="assessment.html" class="nav-link"><i class="fas fa-redo"></i> New Assessment</a></li>
-                <!-- <li><a href="#save" class="nav-link"><i class="fas fa-download"></i> Save Results</a></li> -->
             </ul>
         </div>
     </nav>
@@ -678,101 +678,43 @@
             </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="action-buttons">
-            <!-- <button class="btn btn-primary" onclick="window.print()">
-                <i class="fas fa-print"></i> Print Report
-            </button> -->
-            <button class="btn btn-secondary" onclick="startNewAssessment()">
-                <i class="fas fa-redo"></i> New Assessment
-            </button>
-            <!-- <button class="btn btn-primary" onclick="shareResults()">
-                <i class="fas fa-share-alt"></i> Share Results
-            </button> -->
-        </div>
-
-        <!-- Weekly Preview Section -->
-        <div class="weekly-preview-section">
-            <h2><i class="fas fa-envelope-open-text"></i> Weekly Summary Preview</h2>
+        <!-- User History Section -->
+        <!-- <div class="weekly-preview-section">
+            <h2><i class="fas fa-history"></i> Your Assessment History</h2>
             
             <div class="preview-container">
                 <div class="preview-header">
-                    <h3>Your Weekly Screen Time Summary</h3>
-                    <p>Week ending <span id="weeklyDate">${new Date().toLocaleDateString()}</span></p>
+                    <h3>Recent Assessments</h3>
+                    <p>Track your progress over time</p>
                 </div>
                 
-                <div class="preview-card">
-                    <h4>📊 Weekly Metrics</h4>
-                    <div class="preview-metrics">
-                        <div class="preview-metric">
-                            <div class="preview-metric-value" id="weeklyScreenTime">-</div>
-                            <div class="preview-metric-label">Avg. Screen Time</div>
-                        </div>
-                        <div class="preview-metric">
-                            <div class="preview-metric-value" id="weeklyImprovement">-</div>
-                            <div class="preview-metric-label">Improvement</div>
-                        </div>
+                <div id="historyContainer">
+                    <div class="preview-card">
+                        <h4>📊 Loading your history...</h4>
+                        <p>Please wait while we fetch your assessment data.</p>
                     </div>
                 </div>
                 
-                <div class="preview-tip">
-                    <h4>💡 This Week's Featured Tip</h4>
-                    <p id="weeklyTip" class="preview-text">
-                        Try implementing the "Digital Sunset" rule - no screens 1 hour before bed.
-                    </p>
-                </div>
-                
-                <div class="preview-challenge">
-                    <h4>🎯 Weekly Challenge</h4>
-                    <p id="weeklyChallenge" class="preview-text">
-                        Reduce social media usage by 30 minutes per day this week.
-                    </p>
-                </div>
-                
                 <div class="preview-actions">
-                    <button class="btn btn-primary" onclick="sendTestWeeklyEmail()" style="margin: 5px;">
-                        <i class="fas fa-paper-plane"></i> Send Test Email
+                    <button class="btn btn-primary" onclick="viewFullHistory()" style="margin: 5px;">
+                        <i class="fas fa-list"></i> View Full History
                     </button>
-                    <button class="btn btn-secondary" onclick="scheduleWeeklyEmails()" style="margin: 5px;">
-                        <i class="fas fa-calendar-alt"></i> Schedule Weekly
+                    <button class="btn btn-secondary" onclick="downloadAllReports()" style="margin: 5px;">
+                        <i class="fas fa-download"></i> Download All Reports
                     </button>
                 </div>
             </div>
-        </div>
+        </div> -->
 
         <!-- Download Section -->
         <div class="download-section">
-            <h2><i class="fas fa-download"></i> Download & Share Your Report</h2>
-            <p>Get a detailed PDF report or share your progress with friends and family</p>
+            <h2><i class="fas fa-download"></i> Download Complete Report</h2>
+            <p>Get a comprehensive report including detailed analysis, text summary, and personalized recommendations</p>
             
             <div class="download-buttons">
                 <button class="btn btn-primary" onclick="downloadPDFReport()">
                     <i class="fas fa-file-pdf"></i> Download PDF Report
                 </button>
-                <button class="btn btn-secondary" onclick="downloadTextReport()">
-                    <i class="fas fa-file-alt"></i> Download Text Summary
-                </button>
-                <button class="btn btn-primary" onclick="emailReport()">
-                    <i class="fas fa-envelope"></i> Email This Report
-                </button>
-            </div>
-            
-            <!-- Weekly Summary Signup -->
-            <div class="signup-container">
-                <h3><i class="fas fa-calendar-week"></i> Get Weekly Progress Updates</h3>
-                <p>Enter your email to receive weekly screen time analysis and improvement tips</p>
-                
-                <div class="email-input-container">
-                    <div class="email-input-group">
-                        <input type="email" id="weeklyEmail" placeholder="your.email@example.com" class="email-input">
-                        <button class="btn btn-primary" onclick="signupForWeeklyUpdates()" style="white-space: nowrap;">
-                            <i class="fas fa-paper-plane"></i> Subscribe
-                        </button>
-                    </div>
-                    <p class="privacy-note">
-                        <i class="fas fa-lock"></i> We'll never share your email. Unsubscribe anytime.
-                    </p>
-                </div>
             </div>
         </div>
     </div>
@@ -803,7 +745,17 @@
 
     <!-- JavaScript -->
     <script>
+        let userSession = null;
+        
         document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            userSession = JSON.parse(localStorage.getItem('userSession'));
+            if (!userSession) {
+                alert('Please login to view results');
+                window.location.href = 'login.html';
+                return;
+            }
+            
             // Load assessment data from localStorage
             const formData = JSON.parse(localStorage.getItem('assessmentData'));
             const results = JSON.parse(localStorage.getItem('assessmentResults'));
@@ -824,15 +776,15 @@
             // Generate recommendations
             generateRecommendations(formData, results);
             
-            // Update weekly preview
-            updateWeeklyPreview();
+            // Load user history
+            loadUserHistory();
         });
 
         function displayResults(formData, results) {
             const header = document.getElementById('resultsHeader');
             const badge = document.getElementById('statusBadge');
             
-            if (results.isHealthy) {
+            if (results.is_healthy) {
                 // Healthy results
                 header.style.background = 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)';
                 document.getElementById('resultDescription').textContent = 
@@ -853,9 +805,10 @@
             }
             
             // Update metric values
-            document.getElementById('screenRisk').textContent = Math.round(results.screenIndex);
-            document.getElementById('sleepHealth').textContent = Math.round(results.sleepHealth);
-            document.getElementById('wellbeingScore').textContent = Math.round(results.wellbeingScore);
+            const riskScores = results.risk_scores || {};
+            document.getElementById('screenRisk').textContent = Math.round(riskScores.screen_index || 0);
+            document.getElementById('sleepHealth').textContent = Math.round(riskScores.sleep_health || 0);
+            document.getElementById('wellbeingScore').textContent = Math.round(riskScores.wellbeing_score || 0);
             
             // Color code metrics
             const metrics = ['screenRisk', 'sleepHealth', 'wellbeingScore'];
@@ -1111,6 +1064,102 @@
             window.location.href = 'assessment.html';
         }
 
+        // Load user history
+        async function loadUserHistory() {
+            try {
+                const response = await fetch(`http://localhost:5000/api/user/${userSession.email}/history?limit=5`);
+                const data = await response.json();
+                
+                const historyContainer = document.getElementById('historyContainer');
+                
+                if (response.ok && data.assessments.length > 0) {
+                    historyContainer.innerHTML = '';
+                    
+                    data.assessments.forEach((assessment, index) => {
+                        const date = new Date(assessment.created_at);
+                        const status = assessment.is_healthy ? 'Healthy' : 'Needs Improvement';
+                        const statusColor = assessment.is_healthy ? '#11998e' : '#eb3349';
+                        const riskScore = JSON.parse(assessment.risk_scores).total_risk;
+                        
+                        const historyCard = document.createElement('div');
+                        historyCard.className = 'preview-card';
+                        historyCard.innerHTML = `
+                            <h4>📊 Assessment #${data.assessments.length - index}</h4>
+                            <div class="preview-metrics">
+                                <div class="preview-metric">
+                                    <div class="preview-metric-value" style="color: ${statusColor}">${status}</div>
+                                    <div class="preview-metric-label">${date.toLocaleDateString()}</div>
+                                </div>
+                                <div class="preview-metric">
+                                    <div class="preview-metric-value">${riskScore.toFixed(1)}</div>
+                                    <div class="preview-metric-label">Risk Score</div>
+                                </div>
+                            </div>
+                        `;
+                        historyContainer.appendChild(historyCard);
+                    });
+                } else {
+                    historyContainer.innerHTML = `
+                        <div class="preview-card">
+                            <h4>📊 No Previous Assessments</h4>
+                            <p>This is your first assessment! Take more assessments to track your progress over time.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading user history:', error);
+                document.getElementById('historyContainer').innerHTML = `
+                    <div class="preview-card">
+                        <h4>⚠️ Unable to Load History</h4>
+                        <p>There was an error loading your assessment history. Please try again later.</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function viewHistory() {
+            try {
+                // Get user's latest assessment
+                const response = await fetch(`http://localhost:5000/api/user/${userSession.email}/history?limit=1`);
+                const data = await response.json();
+                
+                if (response.ok && data.assessments.length > 0) {
+                    const latestAssessment = data.assessments[0];
+                    
+                    // Prepare the assessment data for results page
+                    const assessmentData = JSON.parse(latestAssessment.assessment_data);
+                    const predictionResult = JSON.parse(latestAssessment.prediction_result);
+                    
+                    // Store in localStorage for results page
+                    localStorage.setItem('assessmentData', JSON.stringify(assessmentData));
+                    localStorage.setItem('assessmentResults', JSON.stringify(predictionResult));
+                    
+                    // Reload current page to show the latest assessment
+                    window.location.reload();
+                } else {
+                    alert('No assessment history found. Please take an assessment first!');
+                }
+            } catch (error) {
+                console.error('Error loading assessment history:', error);
+                alert('Unable to load assessment history. Please try again.');
+            }
+        }
+
+        function viewFullHistory() {
+            alert('Full history feature coming soon! You can see recent assessments above and more details in your dashboard.');
+        }
+
+        function downloadAllReports() {
+            alert('Download all reports feature coming soon! You can download individual reports from each assessment.');
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('userSession');
+                window.location.href = 'login.html';
+            }
+        }
+
         function shareResults() {
             if (navigator.share) {
                 navigator.share({
@@ -1145,7 +1194,7 @@
                 screenTimeMap[formData.totalScreenTime] || '-';
             
             document.getElementById('weeklyImprovement').textContent = 
-                results.isHealthy ? 'Good' : 'Needed';
+                results.is_healthy ? 'Good' : 'Needed';
             
             // Generate weekly tip
             const tips = [
@@ -1192,9 +1241,6 @@
         
         // Download PDF Report
         function downloadPDFReport() {
-            // In a real system, this would generate a PDF server-side
-            // For demo, we'll create a HTML page that can be printed as PDF
-            
             const formData = JSON.parse(localStorage.getItem('assessmentData'));
             const results = JSON.parse(localStorage.getItem('assessmentResults'));
             
@@ -1203,160 +1249,409 @@
                 return;
             }
             
-            const date = new Date().toLocaleDateString();
+            // Show loading message
+            const originalText = event.target.innerHTML;
+            event.target.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+            event.target.disabled = true;
             
-            const pdfContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Screen Health Analysis Report</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
-                        .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #667eea; padding-bottom: 20px; }
-                        .metric { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; }
-                        .recommendation { margin: 15px 0; padding-left: 20px; border-left: 3px solid #667eea; }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h1 style="color: #667eea;">ScreenHealth AI Analysis Report</h1>
-                        <p>Generated on ${date}</p>
-                    </div>
+            try {
+                // Initialize jsPDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                const date = new Date().toLocaleDateString();
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                
+                // Set default font to Times New Roman
+                doc.setFont('times', 'normal');
+                
+                let yPosition = 25;
+                const pageWidth = 210;
+                const margin = 20;
+                const contentWidth = pageWidth - (margin * 2);
+                
+                // HEADER SECTION
+                doc.setFontSize(18);
+                doc.setFont('times', 'bold');
+                doc.text('SCREENHEALTH AI', pageWidth/2, yPosition, { align: 'center' });
+                yPosition += 8;
+                
+                doc.setFontSize(16);
+                doc.text('Digital Wellness Assessment Report', pageWidth/2, yPosition, { align: 'center' });
+                yPosition += 15;
+                
+                // Header line
+                doc.setLineWidth(0.5);
+                doc.line(margin, yPosition, pageWidth - margin, yPosition);
+                yPosition += 15;
+                
+                // REPORT INFORMATION
+                doc.setFontSize(12);
+                doc.setFont('times', 'normal');
+                doc.text(`Report Date: ${date}`, margin, yPosition);
+                doc.text(`Report ID: SH-${timestamp}`, pageWidth - margin - 60, yPosition);
+                yPosition += 8;
+                
+                const status = results.is_healthy ? 'HEALTHY DIGITAL HABITS' : 'REQUIRES IMPROVEMENT';
+                doc.setFont('times', 'bold');
+                doc.text(`Assessment Status: ${status}`, margin, yPosition);
+                doc.text(`Confidence Level: ${Math.round(results.confidence * 100)}%`, pageWidth - margin - 60, yPosition);
+                yPosition += 20;
+                
+                // EXECUTIVE SUMMARY SECTION
+                doc.setFontSize(14);
+                doc.setFont('times', 'bold');
+                doc.text('EXECUTIVE SUMMARY', margin, yPosition);
+                yPosition += 10;
+                
+                doc.setLineWidth(0.3);
+                doc.line(margin, yPosition - 2, margin + 50, yPosition - 2);
+                yPosition += 5;
+                
+                doc.setFontSize(11);
+                doc.setFont('times', 'normal');
+                const summaryText = `This comprehensive digital wellness assessment evaluates screen time usage patterns, sleep quality, stress levels, and behavioral indicators to determine overall digital health status. The analysis incorporates work-related screen exposure, leisure activities, and lifestyle factors to provide personalized recommendations for optimal digital wellness.`;
+                const summaryLines = doc.splitTextToSize(summaryText, contentWidth);
+                summaryLines.forEach(line => {
+                    doc.text(line, margin, yPosition);
+                    yPosition += 5;
+                });
+                yPosition += 10;
+                
+                // KEY METRICS SECTION
+                doc.setFontSize(14);
+                doc.setFont('times', 'bold');
+                doc.text('KEY HEALTH METRICS', margin, yPosition);
+                yPosition += 10;
+                
+                doc.setLineWidth(0.3);
+                doc.line(margin, yPosition - 2, margin + 50, yPosition - 2);
+                yPosition += 8;
+                
+                // Metrics table
+                doc.setFontSize(11);
+                doc.setFont('times', 'bold');
+                doc.text('Metric', margin + 5, yPosition);
+                doc.text('Score', margin + 100, yPosition);
+                doc.text('Classification', margin + 140, yPosition);
+                yPosition += 8;
+                
+                // Table lines
+                doc.setLineWidth(0.2);
+                doc.line(margin, yPosition - 2, pageWidth - margin, yPosition - 2);
+                yPosition += 3;
+                
+                // Screen Time Risk
+                doc.setFont('times', 'normal');
+                const screenRisk = Math.round(results.risk_scores?.screen_index || 0);
+                const screenClass = screenRisk >= 70 ? 'HIGH RISK' : screenRisk >= 50 ? 'MODERATE RISK' : 'LOW RISK';
+                doc.text('Screen Time Risk Index', margin + 5, yPosition);
+                doc.text(`${screenRisk}/100`, margin + 100, yPosition);
+                doc.text(screenClass, margin + 140, yPosition);
+                yPosition += 6;
+                
+                // Sleep Health
+                const sleepHealth = Math.round(results.risk_scores?.sleep_health || 0);
+                const sleepClass = sleepHealth >= 70 ? 'GOOD' : sleepHealth >= 50 ? 'FAIR' : 'POOR';
+                doc.text('Sleep Health Score', margin + 5, yPosition);
+                doc.text(`${sleepHealth}/100`, margin + 100, yPosition);
+                doc.text(sleepClass, margin + 140, yPosition);
+                yPosition += 6;
+                
+                // Well-being Score
+                const wellbeing = Math.round(results.risk_scores?.wellbeing_score || 0);
+                const wellbeingClass = wellbeing >= 70 ? 'EXCELLENT' : wellbeing >= 50 ? 'GOOD' : 'NEEDS ATTENTION';
+                doc.text('Mental Well-being Score', margin + 5, yPosition);
+                doc.text(`${wellbeing}/100`, margin + 100, yPosition);
+                doc.text(wellbeingClass, margin + 140, yPosition);
+                yPosition += 6;
+                
+                // Total Risk
+                const totalRisk = Math.round(results.risk_scores?.total_risk || 0);
+                const riskClass = totalRisk >= 60 ? 'HIGH' : totalRisk >= 40 ? 'MODERATE' : 'LOW';
+                doc.text('Overall Risk Score', margin + 5, yPosition);
+                doc.text(`${totalRisk}`, margin + 100, yPosition);
+                doc.text(`${riskClass} RISK`, margin + 140, yPosition);
+                yPosition += 15;
+                
+                // ASSESSMENT DATA SECTION
+                doc.setFontSize(14);
+                doc.setFont('times', 'bold');
+                doc.text('ASSESSMENT DATA', margin, yPosition);
+                yPosition += 10;
+                
+                doc.setLineWidth(0.3);
+                doc.line(margin, yPosition - 2, margin + 50, yPosition - 2);
+                yPosition += 8;
+                
+                // Demographics
+                doc.setFontSize(12);
+                doc.setFont('times', 'bold');
+                doc.text('Demographics & Profile', margin, yPosition);
+                yPosition += 8;
+                
+                doc.setFontSize(11);
+                doc.setFont('times', 'normal');
+                doc.text(`Age Group: ${formData.ageGroup || 'Not specified'}`, margin + 5, yPosition);
+                doc.text(`Occupation: ${formData.occupation || 'Not specified'}`, margin + 100, yPosition);
+                yPosition += 6;
+                doc.text(`Gender: ${formData.gender || 'Not specified'}`, margin + 5, yPosition);
+                doc.text(`Field of Work: ${formData.field || 'Not specified'}`, margin + 100, yPosition);
+                yPosition += 12;
+                
+                // Screen Time Usage
+                doc.setFontSize(12);
+                doc.setFont('times', 'bold');
+                doc.text('Screen Time Usage Patterns', margin, yPosition);
+                yPosition += 8;
+                
+                doc.setFontSize(11);
+                doc.setFont('times', 'normal');
+                doc.text(`Total Daily Screen Time: ${formData.totalScreenTime || 'Not specified'}`, margin + 5, yPosition);
+                yPosition += 6;
+                doc.text(`Social Media Usage: ${formData.socialMedia || 'Not specified'}`, margin + 5, yPosition);
+                yPosition += 6;
+                doc.text(`Entertainment Time: ${formData.entertainment || 'Not specified'}`, margin + 5, yPosition);
+                yPosition += 6;
+                doc.text(`Work/Education Time: ${formData.workTime || 'Not specified'}`, margin + 5, yPosition);
+                yPosition += 6;
+                doc.text(`Primary Devices: ${formData.device || 'Not specified'}`, margin + 5, yPosition);
+                yPosition += 12;
+                
+                // Health & Lifestyle
+                doc.setFontSize(12);
+                doc.setFont('times', 'bold');
+                doc.text('Health & Lifestyle Indicators', margin, yPosition);
+                yPosition += 8;
+                
+                doc.setFontSize(11);
+                doc.setFont('times', 'normal');
+                doc.text(`Sleep Duration: ${formData.sleepDuration || 'Not specified'}`, margin + 5, yPosition);
+                doc.text(`Sleep Quality: ${formData.sleepQuality || 'N/A'}/5`, margin + 100, yPosition);
+                yPosition += 6;
+                doc.text(`Screen Before Sleep: ${formData.screenBeforeSleep || 'Not specified'}`, margin + 5, yPosition);
+                yPosition += 6;
+                doc.text(`Stress Level: ${formData.stress || 'N/A'}/5`, margin + 5, yPosition);
+                doc.text(`Anxiety Level: ${formData.anxious || 'N/A'}/5`, margin + 100, yPosition);
+                yPosition += 6;
+                doc.text(`Eye Strain Level: ${formData.eyeStrain || 'N/A'}/5`, margin + 5, yPosition);
+                yPosition += 6;
+                doc.text(`Exercise Frequency: ${formData.exercise || 'Not specified'}`, margin + 5, yPosition);
+                yPosition += 6;
+                doc.text(`Device Addiction Concern: ${formData.addicted || 'Not specified'}`, margin + 5, yPosition);
+                yPosition += 20;
+                
+                // Check if we need a new page
+                if (yPosition > 250) {
+                    doc.addPage();
+                    yPosition = 25;
+                }
+                
+                // CLINICAL RECOMMENDATIONS SECTION
+                doc.setFontSize(14);
+                doc.setFont('times', 'bold');
+                doc.text('CLINICAL RECOMMENDATIONS', margin, yPosition);
+                yPosition += 10;
+                
+                doc.setLineWidth(0.3);
+                doc.line(margin, yPosition - 2, margin + 60, yPosition - 2);
+                yPosition += 8;
+                
+                const recommendations = generateProfessionalRecommendations(formData, results);
+                
+                doc.setFontSize(11);
+                doc.setFont('times', 'normal');
+                
+                recommendations.forEach((rec, index) => {
+                    if (yPosition > 270) {
+                        doc.addPage();
+                        yPosition = 25;
+                    }
                     
-                    <h2>Assessment Summary</h2>
-                    <p><strong>Date:</strong> ${date}</p>
-                    <p><strong>Overall Status:</strong> ${results.isHealthy ? 'Healthy' : 'Needs Improvement'}</p>
+                    doc.setFont('times', 'bold');
+                    doc.text(`${index + 1}.`, margin, yPosition);
                     
-                    <h2>Key Metrics</h2>
-                    <div class="metric">
-                        <p><strong>Screen Time Risk:</strong> ${Math.round(results.screenIndex)}/100</p>
-                        <p><strong>Sleep Health:</strong> ${Math.round(results.sleepHealth)}/100</p>
-                        <p><strong>Well-being Score:</strong> ${Math.round(results.wellbeingScore)}/100</p>
-                    </div>
+                    doc.setFont('times', 'normal');
+                    const lines = doc.splitTextToSize(rec, contentWidth - 10);
+                    lines.forEach((line, lineIndex) => {
+                        doc.text(line, margin + 8, yPosition);
+                        if (lineIndex < lines.length - 1) yPosition += 5;
+                    });
+                    yPosition += 8;
+                });
+                
+                yPosition += 10;
+                
+                // ACTION PLAN SECTION
+                if (yPosition > 220) {
+                    doc.addPage();
+                    yPosition = 25;
+                }
+                
+                doc.setFontSize(14);
+                doc.setFont('times', 'bold');
+                doc.text('RECOMMENDED ACTION PLAN', margin, yPosition);
+                yPosition += 10;
+                
+                doc.setLineWidth(0.3);
+                doc.line(margin, yPosition - 2, margin + 60, yPosition - 2);
+                yPosition += 8;
+                
+                const actionPlan = [
+                    'Immediate Actions (Week 1-2): Implement highest priority recommendations and establish baseline measurements.',
+                    'Short-term Goals (Month 1): Reduce total screen time by 20% and establish consistent sleep schedule.',
+                    'Medium-term Objectives (Months 2-3): Develop sustainable digital wellness habits and stress management techniques.',
+                    'Long-term Maintenance (Months 4+): Regular assessment monitoring and habit reinforcement.',
+                    'Follow-up Assessment: Retake evaluation in 4-6 weeks to measure progress and adjust recommendations.'
+                ];
+                
+                doc.setFontSize(11);
+                doc.setFont('times', 'normal');
+                
+                actionPlan.forEach((action, index) => {
+                    if (yPosition > 270) {
+                        doc.addPage();
+                        yPosition = 25;
+                    }
                     
-                    <h2>Personalized Recommendations</h2>
-                    ${generatePDFRecommendations(formData, results)}
+                    doc.setFont('times', 'bold');
+                    doc.text(`${index + 1}.`, margin, yPosition);
                     
-                    <div style="margin-top: 40px; font-size: 0.9em; color: #666; text-align: center;">
-                        <p>Report generated by ScreenHealth AI - Digital Wellness Analysis System</p>
-                        <p>For research purposes only. Consult healthcare professionals for medical advice.</p>
-                    </div>
-                </body>
-                </html>
-            `;
-            
-            // Open in new window for printing/saving as PDF
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(pdfContent);
-            printWindow.document.close();
-            printWindow.print();
+                    doc.setFont('times', 'normal');
+                    const lines = doc.splitTextToSize(action, contentWidth - 10);
+                    lines.forEach((line, lineIndex) => {
+                        doc.text(line, margin + 8, yPosition);
+                        if (lineIndex < lines.length - 1) yPosition += 5;
+                    });
+                    yPosition += 8;
+                });
+                
+                // FOOTER ON EACH PAGE
+                const pageCount = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= pageCount; i++) {
+                    doc.setPage(i);
+                    
+                    // Footer line
+                    doc.setLineWidth(0.2);
+                    doc.line(margin, 285, pageWidth - margin, 285);
+                    
+                    doc.setFontSize(9);
+                    doc.setFont('times', 'normal');
+                    doc.text('ScreenHealth AI - Digital Wellness Assessment Report', margin, 290);
+                    doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin - 20, 290);
+                    
+                    doc.setFontSize(8);
+                    doc.text('This report is for informational purposes only. Consult healthcare professionals for medical advice.', margin, 295);
+                }
+                
+                // Save the PDF
+                doc.save(`ScreenHealth-Professional-Report-${timestamp}.pdf`);
+                
+                // Show success message
+                setTimeout(() => {
+                    alert('✅ Professional PDF Report Generated Successfully!\n\n📁 File Location: Downloads folder\n📄 Filename: ScreenHealth-Professional-Report-' + timestamp + '.pdf\n\n💡 This report uses professional medical formatting and can be shared with healthcare providers.');
+                }, 500);
+                
+            } catch (error) {
+                console.error('PDF generation error:', error);
+                alert('❌ Error generating PDF. Please try again or contact support.');
+            } finally {
+                // Reset button
+                event.target.innerHTML = originalText;
+                event.target.disabled = false;
+            }
         }
 
-        function generatePDFRecommendations(formData, results) {
-            const tips = [];
+        function generateProfessionalRecommendations(formData, results) {
+            const recommendations = [];
             
-            // Wellness tips
-            if (formData.totalScreenTime.includes('More than 6 hours')) {
-                tips.push('Reduce total screen time by 2 hours daily');
+            // Priority-based recommendations
+            if (formData.totalScreenTime && formData.totalScreenTime.includes('More than 6 hours')) {
+                recommendations.push('CRITICAL INTERVENTION: Reduce total daily screen time to under 4 hours through structured scheduling and environmental modifications. Implement the 50/10 rule (50 minutes screen time, 10 minutes break) during all non-essential usage.');
             }
-            if (formData.sleepQuality <= 2) {
-                tips.push('Improve sleep quality with evening relaxation routines');
+            
+            if (formData.sleepQuality && parseInt(formData.sleepQuality) <= 2) {
+                recommendations.push('SLEEP HYGIENE PROTOCOL: Establish digital curfew 2 hours before bedtime. Implement progressive muscle relaxation and maintain consistent sleep schedule. Consider blue light filtering glasses for evening screen use.');
             }
+            
+            if (formData.stress && parseInt(formData.stress) >= 4) {
+                recommendations.push('STRESS MANAGEMENT INTERVENTION: Incorporate daily mindfulness meditation (minimum 10 minutes). Practice diaphragmatic breathing exercises during high-stress periods. Consider professional counseling if stress levels persist.');
+            }
+            
             if (formData.exercise === 'Never') {
-                tips.push('Start with 20-minute walks, 3 times per week');
+                recommendations.push('PHYSICAL ACTIVITY PRESCRIPTION: Initiate structured exercise program with minimum 150 minutes moderate-intensity activity per week. Begin with 20-minute daily walks and progress to comprehensive fitness routine.');
             }
             
-            // Format as HTML
-            return tips.map(tip => `<div class="recommendation"><p>${tip}</p></div>`).join('');
-        }
-
-        // Download Text Report
-        function downloadTextReport() {
-            const formData = JSON.parse(localStorage.getItem('assessmentData'));
-            const results = JSON.parse(localStorage.getItem('assessmentResults'));
-            
-            if (!formData || !results) {
-                alert('No data available to download');
-                return;
+            if (formData.socialMedia && formData.socialMedia.includes('More than 6 hours')) {
+                recommendations.push('SOCIAL MEDIA RESTRICTION: Implement strict daily limits (maximum 1 hour) using application controls. Remove social media applications from primary devices during work hours. Practice digital detox periods weekly.');
             }
             
-            const date = new Date().toLocaleDateString();
-            const status = results.isHealthy ? 'Healthy' : 'Needs Improvement';
+            if (formData.workTime && (formData.workTime.includes('More than 6 hours') || formData.workTime.includes('5–6 hours'))) {
+                recommendations.push('OCCUPATIONAL HEALTH MEASURES: Implement ergonomic workstation setup with proper monitor positioning. Use Pomodoro Technique (25-minute work intervals with 5-minute breaks). Perform eye exercises every 30 minutes.');
+            }
             
-            const textContent = `
-        SCREENHEALTH AI ANALYSIS REPORT
-        ===============================
-        Generated: ${date}
-        Overall Status: ${status}
-
-        KEY METRICS:
-        ------------
-        • Screen Time Risk: ${Math.round(results.screenIndex)}/100
-        • Sleep Health: ${Math.round(results.sleepHealth)}/100
-        • Well-being Score: ${Math.round(results.wellbeingScore)}/100
-
-        ASSESSMENT SUMMARY:
-        -------------------
-        • Age Group: ${formData.ageGroup}
-        • Occupation: ${formData.occupation}
-        • Total Screen Time: ${formData.totalScreenTime}
-        • Social Media: ${formData.socialMedia}
-        • Sleep Quality: ${formData.sleepQuality}/5
-        • Stress Level: ${formData.stress}/5
-
-        PERSONALIZED RECOMMENDATIONS:
-        -----------------------------
-        ${generateTextRecommendations(formData)}
-
-        ACTION PLAN:
-        ------------
-        1. Review your screen time patterns
-        2. Implement recommended changes
-        3. Retake assessment in 2 weeks
-        4. Track progress regularly
-
-        NOTES:
-        ------
-        This report is for informational purposes only.
-        Consult healthcare professionals for medical advice.
-
-        ScreenHealth AI Research Project
-        https://screenhealth-ai.example.com
-            `;
+            if (formData.eyeStrain && parseInt(formData.eyeStrain) >= 4) {
+                recommendations.push('OCULAR HEALTH PROTOCOL: Follow 20-20-20 rule strictly (every 20 minutes, look at object 20 feet away for 20 seconds). Adjust screen brightness to match surrounding environment. Consider computer vision syndrome evaluation by eye care professional.');
+            }
             
-            // Create download link
-            const blob = new Blob([textContent], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `screenhealth-report-${date.replace(/\//g, '-')}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            // General recommendations
+            recommendations.push('ENVIRONMENTAL MODIFICATIONS: Create designated device-free zones in living spaces, particularly bedroom and dining areas. Establish charging stations outside sleeping areas.');
+            
+            recommendations.push('BEHAVIORAL INTERVENTIONS: Practice mindful technology use through conscious decision-making before device engagement. Implement gratitude journaling to reduce compulsive social media checking.');
+            
+            recommendations.push('MONITORING AND EVALUATION: Maintain daily digital wellness log tracking screen time, mood, and sleep quality. Schedule follow-up assessment in 4-6 weeks to evaluate progress and adjust interventions.');
+            
+            return recommendations;
         }
 
         function generateTextRecommendations(formData) {
-            const tips = [];
+            const recommendations = [];
             
-            if (formData.totalScreenTime.includes('More than 6 hours')) {
-                tips.push('• Reduce total screen time by 2 hours daily');
+            // Screen time recommendations
+            if (formData.totalScreenTime && formData.totalScreenTime.includes('More than 6 hours')) {
+                recommendations.push('🚨 CRITICAL: Reduce total screen time by 2-3 hours daily');
+                recommendations.push('⏰ Take 10-minute breaks every 30 minutes');
+            } else if (formData.totalScreenTime && formData.totalScreenTime.includes('5–6 hours')) {
+                recommendations.push('⚠️ Reduce screen time to under 4 hours daily');
+                recommendations.push('⏰ Take 5-minute breaks every hour');
             }
-            if (formData.socialMedia.includes('More than 6 hours')) {
-                tips.push('• Limit social media to 2 hours daily');
+            
+            // Social media recommendations
+            if (formData.socialMedia && formData.socialMedia.includes('More than 6 hours')) {
+                recommendations.push('📱 EMERGENCY: Limit social media to 1 hour daily');
+                recommendations.push('🔒 Use app timers and blocking features');
             }
-            if (formData.sleepQuality <= 2) {
-                tips.push('• Improve sleep quality with bedtime routine');
+            
+            // Sleep recommendations
+            if (formData.sleepQuality && parseInt(formData.sleepQuality) <= 2) {
+                recommendations.push('😴 PRIORITY: Improve sleep quality with evening routines');
+                recommendations.push('📵 No screens 1-2 hours before bed');
             }
+            
+            // Exercise recommendations
             if (formData.exercise === 'Never') {
-                tips.push('• Start exercising 3 times per week');
+                recommendations.push('💪 URGENT: Start with 20-minute walks, 3 times per week');
+                recommendations.push('🏃 Physical activity is crucial for mental health');
             }
             
-            tips.push('• Take regular breaks using 20-20-20 rule');
-            tips.push('• Establish device-free zones at home');
-            tips.push('• Practice digital sunset before bed');
+            // Stress management
+            if (formData.stress && parseInt(formData.stress) >= 4) {
+                recommendations.push('🧘 HIGH PRIORITY: Practice daily meditation (10-15 minutes)');
+                recommendations.push('🫁 Use breathing exercises during stressful moments');
+            }
             
-            return tips.join('\n');
+            // Work screen time
+            if (formData.workTime && (formData.workTime.includes('More than 6 hours') || formData.workTime.includes('5–6 hours'))) {
+                recommendations.push('💼 Use Pomodoro technique for work (25min work, 5min break)');
+                recommendations.push('🪑 Ensure proper ergonomic setup');
+            }
+            
+            // General recommendations
+            recommendations.push('👁️ Practice 20-20-20 rule: Every 20 min, look 20 feet away for 20 sec');
+            recommendations.push('🚫 Create device-free zones (bedroom, dining area)');
+            recommendations.push('🌅 Implement digital sunset 1-2 hours before bed');
+            
+            return recommendations.length > 0 ? recommendations.join('\n• ') : 'Continue maintaining your current healthy digital habits!';
         }
 
         // Email Report

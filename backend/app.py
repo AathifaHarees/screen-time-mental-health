@@ -15,6 +15,7 @@ from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 import json
 import os
+from database import db
 
 
 # Load environment variables
@@ -48,28 +49,59 @@ class ScreenTimePredictor:
     def preprocess_input(self, user_data):
         """Preprocess user input to match training data format"""
         
+        # Map frontend field names to backend field names
+        field_mapping = {
+            'totalScreenTime': 'Average total screen time per day',
+            'socialMedia': 'Social Media (hours)',
+            'entertainment': 'Entertainment (hours)',
+            'workTime': 'Work/Education (hours)',
+            'sleepDuration': 'Average sleep duration (hours)',
+            'screenBeforeSleep': 'Use screen before sleep',
+            'exercise': 'Exercise frequency',
+            'addicted': 'Feel addicted to devices',
+            'sleepQuality': 'Sleep quality (1–5)',
+            'stress': 'Stress due to screen usage',
+            'anxious': 'Anxious without device',
+            'eyeStrain': 'Eye strain or headache'
+        }
+        
+        # Apply field name mapping
+        mapped_data = {}
+        for frontend_key, backend_key in field_mapping.items():
+            if frontend_key in user_data:
+                mapped_data[backend_key] = user_data[frontend_key]
+        
+        # Copy any unmapped fields
+        for key, value in user_data.items():
+            if key not in field_mapping:
+                mapped_data[key] = value
+        
         # Ordinal mappings
         ordinal_mappings = {
             'Average total screen time per day': {
-                'Less than 1 hour': 0, '1–2 hours': 1, '3–4 hours': 2, 
-                '5–6 hours': 3, 'More than 6 hours': 4
+                'Less than 1 hour': 0, '1–2 hours': 1, '1-2 hours': 1, '3–4 hours': 2, '3-4 hours': 2,
+                '5–6 hours': 3, '5-6 hours': 3, 'More than 6 hours': 4
             },
             'Social Media (hours)': {
-                'Less than 1 hour': 0, '1–2 hours': 1, '3–4 hours': 2, 
-                '5–6 hours': 3, 'More than 6 hours': 4
+                'Less than 1 hour': 0, '1–2 hours': 1, '1-2 hours': 1, '3–4 hours': 2, '3-4 hours': 2,
+                '5–6 hours': 3, '5-6 hours': 3, 'More than 6 hours': 4
             },
             'Entertainment (hours)': {
-                'Less than 1 hour': 0, '1–2 hours': 1, '3–4 hours': 2, 
-                '5–6 hours': 3, 'More than 6 hours': 4
+                'Less than 1 hour': 0, '1–2 hours': 1, '1-2 hours': 1, '3–4 hours': 2, '3-4 hours': 2,
+                '5–6 hours': 3, '5-6 hours': 3, 'More than 6 hours': 4
+            },
+            'Work/Education (hours)': {
+                'Less than 1 hour': 0, '1–2 hours': 1, '1-2 hours': 1, '3–4 hours': 2, '3-4 hours': 2,
+                '5–6 hours': 3, '5-6 hours': 3, 'More than 6 hours': 4
             },
             'Average sleep duration (hours)': {
-                'Less than 5': 0, '5–6': 1, '6–7': 2, '7–8': 3, 'More than 8': 4
+                'Less than 5': 0, '5–6': 1, '5-6': 1, '6–7': 2, '6-7': 2, '7–8': 3, '7-8': 3, 'More than 8': 4
             },
             'Use screen before sleep': {
                 'Never': 0, 'Rarely': 1, 'Sometimes': 2, 'Often': 3, 'Always': 4
             },
             'Exercise frequency': {
-                'Never': 0, '1–2 days per week': 1, '3–4 days per week': 2, 'Daily': 3
+                'Never': 0, '1–2 days per week': 1, '1-2 days per week': 1, '3–4 days per week': 2, '3-4 days per week': 2, 'Daily': 3
             },
             'Feel addicted to devices': {
                 'No': 0, 'Not sure': 1, 'Maybe': 2, 'Yes': 3
@@ -79,10 +111,10 @@ class ScreenTimePredictor:
         processed_data = {}
         
         # Apply ordinal encoding
-        for key, value in user_data.items():
+        for key, value in mapped_data.items():
             if key in ordinal_mappings:
                 processed_data[key] = ordinal_mappings[key].get(value, 0)
-            elif isinstance(value, str) and key in self.label_encoders:
+            elif isinstance(value, str) and self.label_encoders and key in self.label_encoders:
                 try:
                     processed_data[key] = self.label_encoders[key].transform([value])[0]
                 except:
@@ -99,7 +131,8 @@ class ScreenTimePredictor:
         screen_time_score = (
             processed_data.get('Average total screen time per day', 0) * 5 +
             processed_data.get('Social Media (hours)', 0) * 3 +
-            processed_data.get('Entertainment (hours)', 0) * 2
+            processed_data.get('Entertainment (hours)', 0) * 2 +
+            processed_data.get('Work/Education (hours)', 0) * 1
         )
         
         # Sleep risk
@@ -127,6 +160,7 @@ class ScreenTimePredictor:
             'screen_time_score': screen_time_score,
             'sleep_risk': sleep_risk,
             'behavioral_risk': behavioral_risk,
+            'work_time_score': processed_data.get('Work/Education (hours)', 0),
             'screen_index': min(100, total_risk * 1.5),
             'sleep_health': max(0, 100 - sleep_risk * 3),
             'wellbeing_score': max(0, 100 - behavioral_risk * 2.5)
@@ -513,19 +547,56 @@ def health_check():
 
 @app.route('/api/predict', methods=['POST'])
 def predict():
-    """Main prediction endpoint"""
+    """Main prediction endpoint with database storage"""
     try:
-        user_data = request.json
+        data = request.json
+        user_data = data.get('user_data', {})
+        user_email = data.get('email')
         
         # Validate input
         if not user_data:
             return jsonify({'error': 'No data provided'}), 400
+        
+        # Get or create user if email provided
+        user_id = None
+        if user_email:
+            user = db.get_user_by_email(user_email)
+            if not user:
+                # Create new user without password (for assessment-only users)
+                result = db.create_user_with_password(
+                    email=user_email,
+                    name=user_data.get('name'),
+                    password=None,  # No password for assessment-only users
+                    age_group=user_data.get('ageGroup')
+                )
+                if result['success']:
+                    user_id = result['user_id']
+                    print(f"✓ Created new user: {user_email} (ID: {user_id})")
+            else:
+                user_id = user['id']
+                print(f"✓ Found existing user: {user_email} (ID: {user_id})")
         
         # Make prediction
         prediction = predictor.predict(user_data)
         
         # Generate recommendations
         recommendations = RecommendationEngine.generate_recommendations(prediction, user_data)
+        
+        # Save to database if user exists
+        if user_id:
+            print(f"💾 Saving assessment for user ID: {user_id}")
+            save_result = db.save_assessment(
+                user_id=user_id,
+                assessment_data=user_data,
+                prediction_result=prediction,
+                risk_scores=prediction['risk_scores']
+            )
+            if save_result['success']:
+                print(f"✅ Assessment saved successfully! Assessment ID: {save_result['assessment_id']}")
+            else:
+                print(f"❌ Failed to save assessment: {save_result['error']}")
+        else:
+            print("⚠️ No user ID - assessment not saved to database")
         
         # Prepare response
         response = {
@@ -541,6 +612,7 @@ def predict():
                 'wellbeing_score': round(prediction['risk_scores']['wellbeing_score'], 2)
             },
             'recommendations': recommendations,
+            'user_id': user_id,
             'timestamp': datetime.now().isoformat()
         }
         
@@ -567,39 +639,454 @@ def get_recommendations():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/send-weekly-summary', methods=['POST'])
-def send_weekly_summary():
-    """Send weekly summary email"""
+@app.route('/api/generate-report', methods=['POST'])
+def generate_report():
+    """Generate downloadable HTML report"""
     try:
         data = request.json
-        email = data.get('email')
-        summary_data = data.get('summary_data', {})
+        user_data = data.get('user_data', {})
+        prediction = data.get('prediction', {})
+        recommendations = data.get('recommendations', {})
+        user_email = data.get('email', 'user@example.com')
         
-        if not email:
-            return jsonify({'error': 'Email address required'}), 400
+        # Get user stats if email provided
+        user_stats = {}
+        if user_email != 'user@example.com':
+            user = db.get_user_by_email(user_email)
+            if user:
+                user_stats = db.get_user_stats(user['id'])
         
-        # Generate email content
-        email_html = generate_weekly_email(summary_data)
+        # Generate comprehensive HTML report
+        report_html = generate_report_html(user_data, prediction, recommendations, user_stats, user_email)
         
-        # ACTUALLY SEND THE EMAIL (uncommented)
-        success = send_email(email, "Your Weekly Screen Time Summary", email_html)
-        
-        if success:
-            return jsonify({
-                'status': 'success',
-                'message': f'Weekly summary sent to {email}',
-                'email_sent': True
-            })
-        else:
-            return jsonify({
-                'status': 'error',
-                'message': 'Failed to send email. Please check SMTP configuration.',
-                'email_sent': False,
-                'email_preview': email_html  # Show preview even if sending fails
-            })
+        return jsonify({
+            'success': True,
+            'report_html': report_html,
+            'filename': f"screenhealth_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+        })
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+def generate_report_html(user_data, prediction, recommendations, user_stats, user_email):
+    """Generate comprehensive HTML report"""
+    
+    date = datetime.now().strftime('%B %d, %Y at %I:%M %p')
+    
+    # Get risk scores
+    risk_scores = prediction.get('risk_scores', {})
+    total_risk = risk_scores.get('total_risk', 0)
+    screen_index = risk_scores.get('screen_index', 0)
+    sleep_health = risk_scores.get('sleep_health', 0)
+    wellbeing_score = risk_scores.get('wellbeing_score', 0)
+    
+    # Health status
+    is_healthy = prediction.get('is_healthy', False)
+    confidence = prediction.get('confidence', 0)
+    status = 'Healthy' if is_healthy else 'Needs Improvement'
+    status_color = '#28a745' if is_healthy else '#dc3545'
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ScreenHealth AI Report - {date}</title>
+        <style>
+            body {{
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+                background: #f8f9fa;
+            }}
+            .header {{
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+                border-radius: 10px;
+                margin-bottom: 30px;
+            }}
+            .section {{
+                background: white;
+                padding: 25px;
+                margin: 20px 0;
+                border-radius: 10px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }}
+            .status-badge {{
+                display: inline-block;
+                padding: 10px 20px;
+                border-radius: 25px;
+                color: white;
+                font-weight: bold;
+                font-size: 1.1em;
+                background: {status_color};
+            }}
+            .metric {{
+                display: inline-block;
+                margin: 15px 20px;
+                text-align: center;
+                min-width: 120px;
+            }}
+            .metric-value {{
+                font-size: 2.5em;
+                font-weight: bold;
+                color: #667eea;
+                display: block;
+            }}
+            .metric-label {{
+                font-size: 0.9em;
+                color: #666;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }}
+            .recommendation {{
+                background: #e3f2fd;
+                padding: 15px;
+                border-left: 4px solid #2196f3;
+                margin: 10px 0;
+                border-radius: 4px;
+            }}
+            .recommendation h4 {{
+                margin: 0 0 10px 0;
+                color: #1976d2;
+            }}
+            .recommendation ul {{
+                margin: 10px 0;
+                padding-left: 20px;
+            }}
+            .recommendation li {{
+                margin: 5px 0;
+            }}
+            .warning {{
+                background: #fff3cd;
+                border-left: 4px solid #ffc107;
+                color: #856404;
+            }}
+            .danger {{
+                background: #f8d7da;
+                border-left: 4px solid #dc3545;
+                color: #721c24;
+            }}
+            .success {{
+                background: #d4edda;
+                border-left: 4px solid #28a745;
+                color: #155724;
+            }}
+            .footer {{
+                text-align: center;
+                color: #666;
+                margin-top: 40px;
+                padding: 20px;
+                border-top: 1px solid #ddd;
+            }}
+            .progress-bar {{
+                width: 100%;
+                height: 20px;
+                background: #e9ecef;
+                border-radius: 10px;
+                overflow: hidden;
+                margin: 10px 0;
+            }}
+            .progress-fill {{
+                height: 100%;
+                background: linear-gradient(90deg, #28a745, #ffc107, #dc3545);
+                transition: width 0.3s ease;
+            }}
+            @media print {{
+                body {{ background: white; }}
+                .section {{ box-shadow: none; border: 1px solid #ddd; }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>🧠 ScreenHealth AI Report</h1>
+            <p>Digital Wellness Assessment</p>
+            <p>{date}</p>
+            <p>User: {user_email}</p>
+        </div>
+        
+        <div class="section">
+            <h2>Executive Summary</h2>
+            <div class="recommendation {'success' if is_healthy else 'danger'}">
+                <h4>📋 Assessment Overview</h4>
+                <p><strong>Health Status:</strong> {status} (Confidence: {confidence:.1%})</p>
+                <p><strong>Risk Level:</strong> {
+                    'Low Risk' if total_risk < 30 else 
+                    'Moderate Risk' if total_risk < 60 else 
+                    'High Risk'
+                } (Score: {total_risk:.1f}/100)</p>
+                <p><strong>Key Findings:</strong></p>
+                <ul>
+                    <li>Total daily screen time: {user_data.get('totalScreenTime', 'Not specified')}</li>
+                    <li>Social media usage: {user_data.get('socialMedia', 'Not specified')}</li>
+                    <li>Sleep quality: {user_data.get('sleepQuality', 'Not specified')}/5</li>
+                    <li>Stress level: {user_data.get('stress', 'Not specified')}/5</li>
+                    <li>Exercise frequency: {user_data.get('exercise', 'Not specified')}</li>
+                </ul>
+                
+                <p><strong>Summary:</strong> 
+                {'Your screen time habits appear to be within healthy limits. Continue maintaining these positive patterns while staying mindful of your digital wellness.' if is_healthy else 
+                'Your screen time patterns indicate areas for improvement. The recommendations below will help you develop healthier digital habits and reduce potential negative impacts on your mental health.'}
+                </p>
+                
+                <p><strong>Priority Actions:</strong></p>
+                <ul>
+                    {f'<li>🚨 Reduce total screen time from {user_data.get("totalScreenTime", "current level")} - this is your highest priority</li>' if user_data.get('totalScreenTime') in ['More than 6 hours', '5–6 hours'] else ''}
+                    {f'<li>😴 Improve sleep quality (currently {user_data.get("sleepQuality", "N/A")}/5) by avoiding screens before bed</li>' if int(user_data.get('sleepQuality', 5)) <= 3 else ''}
+                    {f'<li>🧘 Manage stress levels (currently {user_data.get("stress", "N/A")}/5) with regular breaks and mindfulness</li>' if int(user_data.get('stress', 1)) >= 4 else ''}
+                    {f'<li>💪 Increase physical activity from "{user_data.get("exercise", "current level")}" to daily exercise</li>' if user_data.get('exercise') in ['Never', '1–2 days per week'] else ''}
+                    <li>📊 Take regular assessments to track your progress over time</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Overall Health Status</h2>
+            <div style="text-align: center; margin: 20px 0;">
+                <div class="status-badge">{status}</div>
+                <p style="margin-top: 15px;">Confidence: {confidence:.1%}</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Risk Assessment Scores</h2>
+            <div style="text-align: center;">
+                <div class="metric">
+                    <span class="metric-value">{total_risk:.1f}</span>
+                    <span class="metric-label">Total Risk</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">{screen_index:.1f}</span>
+                    <span class="metric-label">Screen Index</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">{sleep_health:.1f}</span>
+                    <span class="metric-label">Sleep Health</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">{wellbeing_score:.1f}</span>
+                    <span class="metric-label">Wellbeing</span>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <p><strong>Risk Level Progress:</strong></p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {min(100, total_risk)}%;"></div>
+                </div>
+                <p style="font-size: 0.9em; color: #666;">
+                    0-30: Low Risk | 30-60: Moderate Risk | 60+: High Risk
+                </p>
+            </div>
+        </div>
+    """
+    
+    # Add user statistics if available
+    if user_stats:
+        html += f"""
+        <div class="section">
+            <h2>Your Progress Statistics</h2>
+            <div style="text-align: center;">
+                <div class="metric">
+                    <span class="metric-value">{user_stats.get('total_assessments', 0)}</span>
+                    <span class="metric-label">Total Assessments</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">{user_stats.get('avg_risk_score', 0):.1f}</span>
+                    <span class="metric-label">Average Risk</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">{user_stats.get('healthy_count', 0)}</span>
+                    <span class="metric-label">Healthy Results</span>
+                </div>
+            </div>
+            
+            <div class="recommendation">
+                <h4>📈 Progress Analysis</h4>
+                <p>You have completed {user_stats.get('total_assessments', 0)} assessment(s) with an average risk score of {user_stats.get('avg_risk_score', 0):.1f}. 
+                Out of these, {user_stats.get('healthy_count', 0)} showed healthy patterns while {user_stats.get('unhealthy_count', 0)} indicated areas for improvement.</p>
+                
+                {'<p><strong>Positive Trend:</strong> You are consistently maintaining healthy digital habits. Keep up the excellent work!</p>' if user_stats.get('healthy_count', 0) > user_stats.get('unhealthy_count', 0) else 
+                '<p><strong>Improvement Needed:</strong> Your assessments show a pattern that needs attention. Focus on the recommendations below to develop healthier habits.</p>' if user_stats.get('unhealthy_count', 0) > user_stats.get('healthy_count', 0) else 
+                '<p><strong>Mixed Results:</strong> Your assessments show both healthy and concerning patterns. Consistency in following recommendations will help improve your overall digital wellness.</p>'}
+            </div>
+        </div>
+        """
+    
+    # Add detailed text analysis
+    html += f"""
+        <div class="section">
+            <h2>Detailed Analysis</h2>
+            <div class="recommendation">
+                <h4>🔍 Screen Time Analysis</h4>
+                <p><strong>Total Screen Time:</strong> {user_data.get('totalScreenTime', 'Not specified')}</p>
+                <p>{'Your total screen time is within healthy limits. This is excellent for your mental health and overall wellbeing.' if user_data.get('totalScreenTime') in ['Less than 1 hour', '1–2 hours'] else
+                'Your total screen time is moderate. Consider implementing regular breaks and mindful usage to maintain balance.' if user_data.get('totalScreenTime') == '3–4 hours' else
+                'Your total screen time is above recommended levels. This may be impacting your sleep, stress levels, and overall mental health. Immediate action is recommended.' if user_data.get('totalScreenTime') in ['5–6 hours', 'More than 6 hours'] else
+                'Screen time data not available for analysis.'}</p>
+                
+                <p><strong>Social Media Usage:</strong> {user_data.get('socialMedia', 'Not specified')}</p>
+                <p>{'Excellent social media discipline! This low usage supports better mental health and real-world connections.' if user_data.get('socialMedia') in ['Less than 1 hour', '1–2 hours'] else
+                'Moderate social media usage. Be mindful of the content you consume and take regular breaks.' if user_data.get('socialMedia') == '3–4 hours' else
+                'High social media usage detected. This can significantly impact mental health, sleep, and productivity. Consider setting strict daily limits.' if user_data.get('socialMedia') in ['5–6 hours', 'More than 6 hours'] else
+                'Social media usage data not available.'}</p>
+            </div>
+            
+            <div class="recommendation">
+                <h4>😴 Sleep & Wellness Analysis</h4>
+                <p><strong>Sleep Quality:</strong> {user_data.get('sleepQuality', 'Not specified')}/5</p>
+                <p>{'Excellent sleep quality! This is crucial for mental health and cognitive function.' if int(user_data.get('sleepQuality', 0)) >= 4 else
+                'Moderate sleep quality. Consider improving sleep hygiene and reducing screen time before bed.' if int(user_data.get('sleepQuality', 0)) == 3 else
+                'Poor sleep quality detected. This is likely connected to your screen time habits and needs immediate attention.' if int(user_data.get('sleepQuality', 0)) <= 2 else
+                'Sleep quality data not available.'}</p>
+                
+                <p><strong>Stress Level:</strong> {user_data.get('stress', 'Not specified')}/5</p>
+                <p>{'Low stress levels indicate good mental health balance.' if int(user_data.get('stress', 0)) <= 2 else
+                'Moderate stress levels. Screen time management and regular breaks can help reduce stress.' if int(user_data.get('stress', 0)) == 3 else
+                'High stress levels detected. Excessive screen time may be contributing to this. Immediate stress management techniques are recommended.' if int(user_data.get('stress', 0)) >= 4 else
+                'Stress level data not available.'}</p>
+                
+                <p><strong>Exercise Frequency:</strong> {user_data.get('exercise', 'Not specified')}</p>
+                <p>{'Excellent exercise routine! Regular physical activity is crucial for counteracting screen time effects.' if user_data.get('exercise') == 'Daily' else
+                'Good exercise frequency. This helps balance screen time effects on your physical and mental health.' if user_data.get('exercise') == '3–4 days per week' else
+                'Limited exercise detected. Increasing physical activity will significantly improve your overall wellbeing and help manage screen time effects.' if user_data.get('exercise') in ['1–2 days per week', 'Never'] else
+                'Exercise data not available.'}</p>
+            </div>
+            
+            <div class="recommendation">
+                <h4>🎯 Risk Assessment Summary</h4>
+                <p><strong>Overall Risk Score:</strong> {total_risk:.1f}/100</p>
+                <p>{'Your risk score indicates healthy digital habits. Continue monitoring and maintaining these positive patterns.' if total_risk < 30 else
+                'Your risk score suggests moderate concern. Implementing the recommendations below will help improve your digital wellness.' if total_risk < 60 else
+                'Your risk score indicates high concern. Immediate action is needed to prevent negative impacts on your mental health and wellbeing.'}</p>
+                
+                <p><strong>Key Risk Factors:</strong></p>
+                <ul>
+                    {f'<li>Excessive total screen time ({user_data.get("totalScreenTime", "N/A")})</li>' if user_data.get('totalScreenTime') in ['More than 6 hours', '5–6 hours'] else ''}
+                    {f'<li>High social media usage ({user_data.get("socialMedia", "N/A")})</li>' if user_data.get('socialMedia') in ['More than 6 hours', '5–6 hours'] else ''}
+                    {f'<li>Poor sleep quality ({user_data.get("sleepQuality", "N/A")}/5)</li>' if int(user_data.get('sleepQuality', 5)) <= 2 else ''}
+                    {f'<li>High stress levels ({user_data.get("stress", "N/A")}/5)</li>' if int(user_data.get('stress', 1)) >= 4 else ''}
+                    {f'<li>Insufficient physical activity ({user_data.get("exercise", "N/A")})</li>' if user_data.get('exercise') in ['Never', '1–2 days per week'] else ''}
+                    {f'<li>Potential device addiction (feels addicted: {user_data.get("addicted", "N/A")})</li>' if user_data.get('addicted') in ['Yes', 'Maybe'] else ''}
+                </ul>
+                
+                {f'<p><strong>Protective Factors:</strong></p><ul>' if any([
+                    user_data.get('totalScreenTime') in ['Less than 1 hour', '1–2 hours'],
+                    user_data.get('socialMedia') in ['Less than 1 hour', '1–2 hours'],
+                    int(user_data.get('sleepQuality', 0)) >= 4,
+                    int(user_data.get('stress', 5)) <= 2,
+                    user_data.get('exercise') in ['Daily', '3–4 days per week']
+                ]) else ''}
+                {f'<li>Healthy total screen time ({user_data.get("totalScreenTime", "N/A")})</li>' if user_data.get('totalScreenTime') in ['Less than 1 hour', '1–2 hours'] else ''}
+                {f'<li>Controlled social media usage ({user_data.get("socialMedia", "N/A")})</li>' if user_data.get('socialMedia') in ['Less than 1 hour', '1–2 hours'] else ''}
+                {f'<li>Good sleep quality ({user_data.get("sleepQuality", "N/A")}/5)</li>' if int(user_data.get('sleepQuality', 0)) >= 4 else ''}
+                {f'<li>Low stress levels ({user_data.get("stress", "N/A")}/5)</li>' if int(user_data.get('stress', 5)) <= 2 else ''}
+                {f'<li>Regular exercise routine ({user_data.get("exercise", "N/A")})</li>' if user_data.get('exercise') in ['Daily', '3–4 days per week'] else ''}
+                {'</ul>' if any([
+                    user_data.get('totalScreenTime') in ['Less than 1 hour', '1–2 hours'],
+                    user_data.get('socialMedia') in ['Less than 1 hour', '1–2 hours'],
+                    int(user_data.get('sleepQuality', 0)) >= 4,
+                    int(user_data.get('stress', 5)) <= 2,
+                    user_data.get('exercise') in ['Daily', '3–4 days per week']
+                ]) else ''}
+            </div>
+        </div>
+    """
+    
+    # Add recommendations
+    if recommendations:
+        html += """
+        <div class="section">
+            <h2>Personalized Recommendations</h2>
+        """
+        
+        # Wellness tips
+        if recommendations.get('wellness_tips'):
+            html += """
+            <div class="recommendation success">
+                <h4>🌟 Wellness Tips</h4>
+                <ul>
+            """
+            for tip in recommendations['wellness_tips'][:5]:  # Limit to 5 tips
+                html += f"<li>{tip}</li>"
+            html += "</ul></div>"
+        
+        # App lock suggestions
+        if recommendations.get('app_lock_suggestions'):
+            html += """
+            <div class="recommendation warning">
+                <h4>📱 Screen Time Management</h4>
+                <ul>
+            """
+            for suggestion in recommendations['app_lock_suggestions'][:5]:
+                html += f"<li>{suggestion}</li>"
+            html += "</ul></div>"
+        
+        # Meditation exercises
+        if recommendations.get('meditation_exercises'):
+            html += """
+            <div class="recommendation">
+                <h4>🧘 Mindfulness & Exercise</h4>
+                <ul>
+            """
+            for exercise in recommendations['meditation_exercises'][:5]:
+                html += f"<li>{exercise}</li>"
+            html += "</ul></div>"
+        
+        # Parental controls / accountability
+        if recommendations.get('parental_controls'):
+            html += """
+            <div class="recommendation danger">
+                <h4>🎯 Accountability & Support</h4>
+                <ul>
+            """
+            for control in recommendations['parental_controls'][:5]:
+                html += f"<li>{control}</li>"
+            html += "</ul></div>"
+        
+        html += "</div>"
+    
+    # Add assessment data summary
+    html += f"""
+        <div class="section">
+            <h2>Assessment Summary</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h4>Screen Time Usage</h4>
+                    <p><strong>Total Screen Time:</strong> {user_data.get('totalScreenTime', 'N/A')}</p>
+                    <p><strong>Social Media:</strong> {user_data.get('socialMedia', 'N/A')}</p>
+                    <p><strong>Entertainment:</strong> {user_data.get('entertainment', 'N/A')}</p>
+                    <p><strong>Work Time:</strong> {user_data.get('workTime', 'N/A')}</p>
+                </div>
+                <div>
+                    <h4>Health Indicators</h4>
+                    <p><strong>Sleep Quality:</strong> {user_data.get('sleepQuality', 'N/A')}/5</p>
+                    <p><strong>Stress Level:</strong> {user_data.get('stress', 'N/A')}/5</p>
+                    <p><strong>Exercise Frequency:</strong> {user_data.get('exercise', 'N/A')}</p>
+                    <p><strong>Feel Addicted:</strong> {user_data.get('addicted', 'N/A')}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>ScreenHealth AI</strong> - Digital Wellness Assessment</p>
+            <p>Generated on {date}</p>
+            <p style="font-size: 0.9em; color: #999;">
+                This report is for educational purposes. For serious health concerns, consult healthcare professionals.
+            </p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return html
 
 # ==================== EMAIL GENERATION ====================
 
@@ -663,15 +1150,15 @@ def generate_weekly_email(summary_data):
     
     return html
 def send_email(to_email, subject, html_content):
-    """Send email using SMTP (configure with your settings)"""
+    """Send email using SMTP - direct configuration"""
     
+    # Direct configuration from .env
     smtp_server = "smtp.gmail.com"
     smtp_port = 587
     sender_email = "screenhealthapp@gmail.com"
-    sender_password = "kmhfexorutijjimk"  # 16-char password without spaces
+    sender_password = "qesujuzgmhheuwth"
     
-    print(f"Attempting to send email from: {sender_email}")
-    print(f"SMTP Server: {smtp_server}:{smtp_port}")
+    print(f"Sending email from: {sender_email} to: {to_email}")
     
     try:
         msg = MIMEMultipart('alternative')
@@ -682,24 +1169,16 @@ def send_email(to_email, subject, html_content):
         html_part = MIMEText(html_content, 'html')
         msg.attach(html_part)
         
-        print("Connecting to SMTP server...")
         server = smtplib.SMTP(smtp_server, smtp_port)
-        print("Starting TLS...")
         server.starttls()
-        print("Logging in...")
         server.login(sender_email, sender_password)
-        print("Sending message...")
         server.send_message(msg)
         server.quit()
         
-        print(f"✓ Email sent successfully to: {to_email}")
+        print(f"✓ Email sent successfully!")
         return True
-    except smtplib.SMTPAuthenticationError as e:
-        print(f"✗ Authentication failed: {e}")
-        print("Check: 1) Email and password, 2) 2FA enabled, 3) App password generated")
-        return False
     except Exception as e:
-        print(f"✗ Error: {type(e).__name__}: {e}")
+        print(f"✗ Email failed: {e}")
         return False
 
 @app.route('/api/test-email', methods=['POST'])
@@ -729,24 +1208,83 @@ def test_email():
     except Exception as e:
         return jsonify({'error': str(e)}), 500 
 
+@app.route('/api/login', methods=['POST'])
+def login_user():
+    """User login endpoint"""
+    try:
+        data = request.json
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return jsonify({'error': 'Email and password required'}), 400
+        
+        # Get user from database
+        user = db.get_user_by_email(email)
+        if not user:
+            return jsonify({'error': 'Invalid email or password'}), 401
+        
+        # For now, we'll use a simple password check
+        # In production, use proper password hashing (bcrypt, etc.)
+        stored_password = user.get('password', '')
+        if password != stored_password:
+            return jsonify({'error': 'Invalid email or password'}), 401
+        
+        # Log the login activity
+        db.log_email(
+            user_id=user['id'],
+            email_type='login',
+            subject='User Login',
+            success=True
+        )
+        
+        return jsonify({
+            'success': True,
+            'user_id': user['id'],
+            'email': user['email'],
+            'name': user['name'],
+            'message': 'Login successful'
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/register', methods=['POST'])
 def register_user():
-    """Register a new user"""
+    """Enhanced user registration with password"""
     try:
         data = request.json
         email = data.get('email')
         name = data.get('name', 'User')
+        password = data.get('password')
+        age_group = data.get('age_group')
         
-        if not email:
-            return jsonify({'error': 'Email required'}), 400
+        if not email or not password:
+            return jsonify({'error': 'Email and password required'}), 400
         
-        # For now, just return success (in production, save to database)
-        return jsonify({
-            'success': True,
-            'message': f'User {name} registered successfully',
-            'email': email,
-            'user_id': hash(email)  # Simple ID generation
-        })
+        if len(password) < 6:
+            return jsonify({'error': 'Password must be at least 6 characters'}), 400
+        
+        # Create user in database with password
+        result = db.create_user_with_password(email=email, name=name, password=password, age_group=age_group)
+        
+        if result['success']:
+            # Log the registration
+            db.log_email(
+                user_id=result['user_id'],
+                email_type='registration',
+                subject='User Registration',
+                success=True
+            )
+            
+            return jsonify({
+                'success': True,
+                'message': result['message'],
+                'user_id': result['user_id'],
+                'email': email
+            })
+        else:
+            return jsonify({'error': result['error']}), 400
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -761,7 +1299,13 @@ def subscribe_weekly():
         if not email:
             return jsonify({'error': 'Email required'}), 400
         
-        # In production, save to database
+        # Get user and enable weekly emails
+        user = db.get_user_by_email(email)
+        if not user:
+            return jsonify({'error': 'User not found. Please register first.'}), 404
+        
+        db.enable_weekly_emails(user['id'], True)
+        
         return jsonify({
             'success': True,
             'message': f'Subscribed {email} to weekly reports',
@@ -771,20 +1315,137 @@ def subscribe_weekly():
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# New database-related endpoints
+@app.route('/api/user/<email>/history', methods=['GET'])
+def get_user_history(email):
+    """Get user's assessment history"""
+    try:
+        user = db.get_user_by_email(email)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        limit = request.args.get('limit', 10, type=int)
+        assessments = db.get_user_assessments(user['id'], limit)
+        
+        return jsonify({
+            'user': dict(user),
+            'assessments': assessments,
+            'total_count': len(assessments)
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/user/<email>/stats', methods=['GET'])
+def get_user_stats(email):
+    """Get user statistics"""
+    try:
+        user = db.get_user_by_email(email)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        stats = db.get_user_stats(user['id'])
+        
+        return jsonify({
+            'user': dict(user),
+            'stats': stats
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/stats', methods=['GET'])
+def get_admin_stats():
+    """Get overall system statistics"""
+    try:
+        stats = db.get_database_stats()
+        return jsonify(stats)
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/emails', methods=['GET'])
+def get_email_logs():
+    """Get email sending logs for tracking"""
+    try:
+        conn = db.get_connection()
+        cursor = conn.cursor()
+        
+        # Get recent email logs with user info
+        cursor.execute('''
+            SELECT 
+                e.id, e.email_type, e.subject, e.sent_at, e.success, e.error_message,
+                u.email, u.name
+            FROM email_logs e
+            JOIN users u ON e.user_id = u.id
+            ORDER BY e.sent_at DESC
+            LIMIT 50
+        ''')
+        
+        logs = cursor.fetchall()
+        conn.close()
+        
+        return jsonify({
+            'email_logs': [dict(log) for log in logs],
+            'total_count': len(logs)
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users/emails', methods=['GET'])
+def get_all_user_emails():
+    """Get all user emails for tracking purposes"""
+    try:
+        conn = db.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT 
+                id, email, name, age_group, created_at, last_assessment, 
+                weekly_email_enabled,
+                (SELECT COUNT(*) FROM assessments WHERE user_id = users.id) as assessment_count
+            FROM users 
+            ORDER BY created_at DESC
+        ''')
+        
+        users = cursor.fetchall()
+        conn.close()
+        
+        return jsonify({
+            'users': [dict(user) for user in users],
+            'total_users': len(users),
+            'email_subscribers': len([u for u in users if u['weekly_email_enabled']])
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 # ==================== RUN APPLICATION ====================
 
 if __name__ == '__main__':
+    import os
+    
     print("\n" + "="*70)
     print("SCREEN TIME MENTAL HEALTH PREDICTION API")
     print("="*70)
     print("\nStarting Flask server...")
-    print("API will be available at: http://localhost:5000")
+    
+    # Get port from environment variable (for deployment) or use 5000 for local
+    port = int(os.environ.get('PORT', 5000))
+    
+    print(f"API will be available at: http://localhost:{port}")
     print("\nEndpoints:")
     print("  - GET  /")
     print("  - GET  /api/health")
     print("  - POST /api/predict")
-    print("  - POST /api/recommendations")
-    print("  - POST /api/send-weekly-summary")
+    print("  - POST /api/generate-report")
+    print("  - POST /api/register")
+    print("  - POST /api/login")
+    print("  - GET  /api/user/<email>/history")
+    print("  - GET  /api/user/<email>/stats")
     print("\n" + "="*70 + "\n")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Production vs Development
+    is_production = os.environ.get('FLASK_ENV') == 'production'
+    app.run(debug=not is_production, host='0.0.0.0', port=port)
