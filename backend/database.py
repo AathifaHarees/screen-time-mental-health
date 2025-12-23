@@ -329,6 +329,49 @@ class ScreenHealthDB:
         
         return {'success': True}
     
+    def update_user_profile(self, user_id, name=None, age_group=None, password=None):
+        """Update user profile information"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        try:
+            # Build dynamic update query based on provided fields
+            update_fields = []
+            params = []
+            
+            if name is not None:
+                update_fields.append("name = ?")
+                params.append(name)
+            
+            if age_group is not None:
+                update_fields.append("age_group = ?")
+                params.append(age_group)
+            
+            if password is not None:
+                update_fields.append("password = ?")
+                params.append(password)
+            
+            if not update_fields:
+                return {'success': False, 'error': 'No fields to update'}
+            
+            # Add user_id to params
+            params.append(user_id)
+            
+            query = f"UPDATE users SET {', '.join(update_fields)} WHERE id = ?"
+            cursor.execute(query, params)
+            
+            if cursor.rowcount == 0:
+                return {'success': False, 'error': 'User not found'}
+            
+            conn.commit()
+            return {'success': True, 'message': 'Profile updated successfully'}
+            
+        except sqlite3.Error as e:
+            conn.rollback()
+            return {'success': False, 'error': str(e)}
+        finally:
+            conn.close()
+    
     def get_weekly_email_users(self):
         """Get users who have weekly emails enabled"""
         conn = self.get_connection()

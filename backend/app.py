@@ -1421,6 +1421,58 @@ def get_all_user_emails():
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/user/<email>/profile', methods=['PUT'])
+def update_user_profile(email):
+    """Update user profile"""
+    try:
+        data = request.get_json()
+        
+        # Get user by email
+        user = db.get_user_by_email(email)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Extract update fields
+        name = data.get('name')
+        age_group = data.get('age_group')
+        password = data.get('password')
+        
+        # Validate inputs
+        if name and len(name.strip()) < 2:
+            return jsonify({'error': 'Name must be at least 2 characters'}), 400
+        
+        if password and len(password) < 6:
+            return jsonify({'error': 'Password must be at least 6 characters'}), 400
+        
+        # Update profile
+        result = db.update_user_profile(
+            user_id=user['id'],
+            name=name.strip() if name else None,
+            age_group=age_group if age_group else None,
+            password=password if password else None
+        )
+        
+        if result['success']:
+            # Return updated user info
+            updated_user = db.get_user_by_email(email)
+            return jsonify({
+                'success': True,
+                'message': result['message'],
+                'user': {
+                    'id': updated_user['id'],
+                    'email': updated_user['email'],
+                    'name': updated_user['name'],
+                    'age_group': updated_user['age_group']
+                }
+            })
+        else:
+            return jsonify({'error': result['error']}), 400
+            
+    except Exception as e:
+        print(f"Profile update error: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # ==================== RUN APPLICATION ====================
 
 if __name__ == '__main__':

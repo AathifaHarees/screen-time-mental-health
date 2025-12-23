@@ -952,6 +952,9 @@
     <script>
         // Mobile Navigation Toggle
         document.addEventListener('DOMContentLoaded', function() {
+            // Redirect to login page - only registered users allowed
+            window.location.href = 'login.html';
+            
             const hamburger = document.querySelector(".hamburger");
             const navMenu = document.querySelector(".nav-menu");
             

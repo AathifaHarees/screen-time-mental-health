@@ -376,7 +376,7 @@
                         </div>
                         <div class="user-dropdown" id="userDropdown">
                             <a href="#" onclick="viewProfile()"><i class="fas fa-user"></i> Profile</a>
-                            <a href="#" onclick="viewHistory()"><i class="fas fa-history"></i> History</a>
+                            <!-- <a href="#" onclick="viewHistory()"><i class="fas fa-history"></i> History</a> -->
                             <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
                         </div>
                     </div>
@@ -446,13 +446,13 @@
                 </button>
             </div>
             
-            <div class="action-card">
+            <!-- <div class="action-card">
                 <h3><i class="fas fa-download"></i> Download Reports</h3>
                 <p>Get comprehensive reports of your digital wellness journey in various formats.</p>
                 <button class="btn btn-secondary" onclick="downloadReports()">
                     <i class="fas fa-file-download"></i> Get Reports
                 </button>
-            </div>
+            </div> -->
         </div>
 
         <!-- Recent Activity -->
@@ -657,7 +657,7 @@
         }
 
         function viewProfile() {
-            alert('Profile settings coming soon! You can update your information here.');
+            window.location.href = 'profile.html';
         }
 
         function toggleUserMenu() {

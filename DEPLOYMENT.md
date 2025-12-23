@@ -1,23 +1,19 @@
 # 🚀 **ScreenHealth AI - Deployment Guide**
 
-## **🎯 Quick Deployment (5 Minutes)**
+## **🎯 Quick Deployment (3 Minutes)**
 
-### **Step 1: Push to GitHub**
+### **Step 1: Push Latest Changes**
 ```bash
-git init
+# Push your latest changes to your existing repo
 git add .
-git commit -m "ScreenHealth AI deployment"
-
-# Create repo at github.com, then:
-git remote add origin https://github.com/YOUR_USERNAME/screenhealth-ai.git
-git branch -M main
-git push -u origin main
+git commit -m "Ready for deployment - cleaned up files"
+git push origin main
 ```
 
 ### **Step 2: Deploy to Render**
 1. Go to **[render.com](https://render.com)** and sign up with GitHub
 2. Click **"New +"** → **"Web Service"**
-3. Connect your **`screenhealth-ai`** repository
+3. Connect your existing repository: **`screen-time-mental-health`**
 4. Configure:
    - **Build Command**: `pip install -r requirements.txt`
    - **Start Command**: `cd backend && python app.py`
@@ -61,4 +57,11 @@ git push origin main
 - **App won't start**: Verify `cd backend && python app.py` command
 - **Frontend errors**: Make sure URLs are updated correctly
 
-**Total deployment time: 5-10 minutes!** 🚀
+**Total deployment time: 3-5 minutes!** �
+
+---
+
+## **📋 Your Repository**
+- **GitHub**: https://github.com/AathifaHarees/screen-time-mental-health.git
+- **Ready to deploy**: All files cleaned up and configured
+- **Next step**: Just push changes and deploy to Render!
