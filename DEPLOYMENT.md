@@ -43,12 +43,24 @@ git push origin main
 
 ---
 
-## **📱 What Users Get**
-- ✅ Professional digital wellness assessments
-- ✅ AI-powered health analysis
-- ✅ Medical-grade PDF reports
-- ✅ Mobile-friendly interface
-- ✅ Secure user accounts and data
+## **📱 What Users Experience**
+- ✅ **Homepage First**: Professional landing page at your main URL
+- ✅ **Clear Navigation**: Home → Login/Register → Dashboard → Assessment
+- ✅ **AI-powered Analysis**: Machine learning health predictions
+- ✅ **Medical-grade Reports**: Professional PDF downloads
+- ✅ **Mobile-friendly**: Works on all devices
+- ✅ **Secure Accounts**: Registration required for full access
+
+### **🌐 User Journey:**
+```
+1. Visit: https://your-app-name.onrender.com
+   ↓ (Shows professional homepage)
+2. Click "Start Free Assessment" 
+   ↓ (Goes to login/register page)
+3. Register/Login
+   ↓ (Access granted to full system)
+4. Dashboard → Assessment → Results → PDF Report
+```
 
 ---
 

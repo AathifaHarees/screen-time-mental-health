@@ -40,8 +40,9 @@ AI-powered system for predicting mental health impacts based on screen time usag
    ```
 
 6. **Access the application:**
-   - Frontend: http://localhost:8000/frontend/index.html
-   - Backend API: http://localhost:5000
+   - **Frontend**: http://localhost:8000/frontend/index.html (main application)
+   - **Backend API**: http://localhost:5000 (API server)
+   - **API Documentation**: http://localhost:5000/api
 
 ## 📁 Project Structure
 
@@ -118,14 +119,23 @@ AI-powered system for predicting mental health impacts based on screen time usag
 
 ## 📊 Usage
 
-1. **Register/Login:** Create an account or login at `/login.html` for full tracking
-2. **Dashboard:** View your personal dashboard with statistics and progress
-3. **Take Assessment:** Complete the screen time questionnaire (logged-in users get automatic tracking)
-4. **Get Prediction:** AI analyzes your patterns and predicts health status
-5. **View Results:** See detailed risk scores and wellness metrics
-6. **Follow Recommendations:** Get personalized tips for digital wellness
-7. **Track Progress:** View your assessment history and improvement trends in dashboard
-8. **Subscribe:** Enable weekly email summaries for ongoing support
+### **🌐 User Flow:**
+1. **Visit Homepage:** Start at the main URL to see ScreenHealth AI overview
+2. **Register/Login:** Click "Start Free Assessment" → Create account or login
+3. **Dashboard:** View your personal dashboard with statistics and progress
+4. **Take Assessment:** Complete the comprehensive screen time questionnaire
+5. **Get Results:** AI analyzes your patterns and provides health predictions
+6. **Download Report:** Get professional PDF report with personalized recommendations
+7. **Track Progress:** Return to dashboard to view history and improvements
+
+### **📋 Detailed Steps:**
+1. **Homepage First:** Professional landing page explains the system and benefits
+2. **Register/Login:** Click "Start Free Assessment" to create account or login  
+3. **Dashboard:** View your personal dashboard with statistics and progress
+4. **Take Assessment:** Complete the comprehensive screen time questionnaire
+5. **Get Results:** AI analyzes your patterns and provides health predictions
+6. **Download Report:** Get professional PDF report with personalized recommendations
+7. **Track Progress:** View assessment history and improvement trends in dashboard
 
 ## 🔐 Professional Features
 

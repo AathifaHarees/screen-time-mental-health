@@ -3,7 +3,7 @@ Screen Time Mental Health Prediction System
 Part 3: Flask Backend API (Production-Ready)
 """
 
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, render_template_string, send_from_directory
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
@@ -124,10 +124,10 @@ class ScreenTimePredictor:
         
         return processed_data
     
-    def calculate_risk_scores(self, processed_data):
-        """Calculate various risk scores"""
+    def calculate_risk_scores(self, processed_data, user_context=None):
+        """Calculate various risk scores with contextual adjustments"""
         
-        # Screen time risk
+        # Base risk calculation
         screen_time_score = (
             processed_data.get('Average total screen time per day', 0) * 5 +
             processed_data.get('Social Media (hours)', 0) * 3 +
@@ -153,15 +153,51 @@ class ScreenTimePredictor:
         # Physical activity benefit
         exercise_benefit = (3 - processed_data.get('Exercise frequency', 0)) * 2
         
-        total_risk = screen_time_score + sleep_risk + behavioral_risk + exercise_benefit
+        # CONTEXTUAL RISK ADJUSTMENT based on occupation and field
+        contextual_adjustment = 0
+        
+        if user_context:
+            occupation = user_context.get('occupation', '')
+            field = user_context.get('field', '')
+            work_time = processed_data.get('Work/Education (hours)', 0)
+            
+            # IT Professional Adjustments
+            if field == 'IT':
+                # Reduce work screen time penalty for IT professionals
+                if work_time >= 4:  # High work screen time is expected
+                    contextual_adjustment -= work_time * 0.5  # Reduce penalty
+                    
+                # But increase recreational screen penalty
+                social_media_hours = processed_data.get('Social Media (hours)', 0)
+                entertainment_hours = processed_data.get('Entertainment (hours)', 0)
+                
+                if social_media_hours >= 2:  # IT workers should avoid recreational screens
+                    contextual_adjustment += social_media_hours * 1.5  # Increase penalty
+                if entertainment_hours >= 2:
+                    contextual_adjustment += entertainment_hours * 1.2
+            
+            # Student Adjustments
+            elif occupation == 'Student':
+                # High work screen time might indicate inefficient study methods
+                if work_time >= 4:
+                    contextual_adjustment += work_time * 0.3  # Slight penalty for inefficiency
+            
+            # Non-IT Professional Adjustments
+            elif field == 'Non-IT' and occupation == 'Employed':
+                # High work screen time is unusual and concerning
+                if work_time >= 4:
+                    contextual_adjustment += work_time * 0.8  # Higher penalty
+        
+        total_risk = screen_time_score + sleep_risk + behavioral_risk + exercise_benefit + contextual_adjustment
         
         return {
-            'total_risk': total_risk,
+            'total_risk': max(0, total_risk),  # Ensure non-negative
             'screen_time_score': screen_time_score,
             'sleep_risk': sleep_risk,
             'behavioral_risk': behavioral_risk,
             'work_time_score': processed_data.get('Work/Education (hours)', 0),
-            'screen_index': min(100, total_risk * 1.5),
+            'contextual_adjustment': contextual_adjustment,
+            'screen_index': min(100, max(0, total_risk * 1.5)),
             'sleep_health': max(0, 100 - sleep_risk * 3),
             'wellbeing_score': max(0, 100 - behavioral_risk * 2.5)
         }
@@ -170,7 +206,15 @@ class ScreenTimePredictor:
         """Make prediction using ML model or fallback logic"""
         
         processed_data = self.preprocess_input(user_data)
-        risk_scores = self.calculate_risk_scores(processed_data)
+        
+        # Extract user context for contextual risk adjustment
+        user_context = {
+            'occupation': user_data.get('occupation', ''),
+            'field': user_data.get('field', ''),
+            'ageGroup': user_data.get('ageGroup', '')
+        }
+        
+        risk_scores = self.calculate_risk_scores(processed_data, user_context)
         
         # Use ML model if available
         if self.model is not None:
@@ -212,16 +256,20 @@ predictor = ScreenTimePredictor()
 # ==================== RECOMMENDATION ENGINE ====================
 
 class RecommendationEngine:
-    """Generate personalized recommendations"""
+    """Generate personalized recommendations based on screen time categories"""
     
     @staticmethod
     def generate_recommendations(prediction, user_data):
-        """Create personalized recommendations based on risk profile and user data"""
+        """Create personalized recommendations organized by screen time categories"""
         
         risk_scores = prediction.get('risk_scores', {})
         
+        # Initialize category-based recommendations
         recommendations = {
-            'wellness_tips': [],
+            'work_screen_recommendations': [],
+            'social_media_recommendations': [],
+            'entertainment_recommendations': [],
+            'general_wellness_tips': [],
             'app_lock_suggestions': [],
             'meditation_exercises': [],
             'parental_controls': []
@@ -231,10 +279,17 @@ class RecommendationEngine:
         total_screen = user_data.get('totalScreenTime', '')
         stress_level = int(user_data.get('stress', 3))
         sleep_before_screen = user_data.get('screenBeforeSleep', '')
+        age_group = user_data.get('ageGroup', '')
+        addicted = user_data.get('addicted', '')
+        work_time = user_data.get('workTime', '')
+        occupation = user_data.get('occupation', '')
+        field = user_data.get('field', '')
+        social_media = user_data.get('socialMedia', '')
+        entertainment = user_data.get('entertainment', '')
         
         # Personalized based on actual screen time
         if total_screen == 'More than 6 hours':
-            recommendations['wellness_tips'].extend([
+            recommendations['general_wellness_tips'].extend([
                 "🚨 CRITICAL: Your 6+ hours of daily screen time is excessive and harmful",
                 "⏰ URGENT: Take a 10-minute break EVERY 30 minutes",
                 "👁️ MANDATORY: Practice 20-20-20 rule - Every 20 min, look 20 feet away for 20 sec",
@@ -243,7 +298,7 @@ class RecommendationEngine:
                 "💪 Target: Reduce screen time by 2 hours this week"
             ])
         elif total_screen == '5–6 hours':
-            recommendations['wellness_tips'].extend([
+            recommendations['general_wellness_tips'].extend([
                 "⚠️ Your 5-6 hours of daily screen time is above healthy limits",
                 "⏰ Take 5-minute breaks every hour",
                 "👁️ Practice 20-20-20 rule for eye health",
@@ -252,7 +307,7 @@ class RecommendationEngine:
                 "📊 Target: Reduce to under 4 hours daily"
             ])
         elif total_screen == '3–4 hours':
-            recommendations['wellness_tips'].extend([
+            recommendations['general_wellness_tips'].extend([
                 "✅ Your screen time is moderate but can improve",
                 "⏰ Continue taking hourly breaks",
                 "👁️ Use blue light filters in the evening",
@@ -260,14 +315,14 @@ class RecommendationEngine:
                 "🎯 Try to keep it under 4 hours"
             ])
         elif total_screen == '1–2 hours':
-            recommendations['wellness_tips'].extend([
+            recommendations['general_wellness_tips'].extend([
                 "🌟 Great! Your screen time is within healthy limits",
                 "✅ Keep maintaining these excellent habits",
                 "📊 Continue tracking to stay accountable",
                 "💡 Consider sharing your strategies with others"
             ])
         else:  # Less than 1 hour
-            recommendations['wellness_tips'].extend([
+            recommendations['general_wellness_tips'].extend([
                 "🏆 Outstanding! Your screen time is exceptionally healthy",
                 "✨ You're a role model for digital wellness",
                 "📚 Consider mentoring others on healthy tech habits",
@@ -276,15 +331,13 @@ class RecommendationEngine:
         
         # Add stress-specific tips
         if stress_level >= 4:
-            recommendations['wellness_tips'].insert(1, f"😰 High stress level ({stress_level}/5) detected - Screen breaks are crucial for your mental health")
+            recommendations['general_wellness_tips'].insert(1, f"😰 High stress level ({stress_level}/5) detected - Screen breaks are crucial for your mental health")
         
         # Add sleep-specific tips
         if sleep_before_screen in ['Always', 'Often']:
-            recommendations['wellness_tips'].append("😴 WARNING: Using screens before sleep is severely harming your rest - Stop 1-2 hours before bed")
+            recommendations['general_wellness_tips'].append("😴 WARNING: Using screens before sleep is severely harming your rest - Stop 1-2 hours before bed")
         
         # ==================== APP LOCK SUGGESTIONS ====================
-        social_media = user_data.get('socialMedia', '')
-        entertainment = user_data.get('entertainment', '')
         
         if social_media == 'More than 6 hours':
             recommendations['app_lock_suggestions'].extend([
@@ -334,17 +387,112 @@ class RecommendationEngine:
             recommendations['app_lock_suggestions'].append(f"🎬 Entertainment time ({entertainment}) can be reduced - Try 2 hours max")
         
         # In generate_recommendations function
-        work_time = user_data.get('workTime', '')
 
-        if work_time in ['More than 6 hours', '5–6 hours']:
-            recommendations['wellness_tips'].extend([
-                "💼 High work screen time detected - Important for ergonomics",
-                "🪑 Ensure proper chair and desk setup",
-                "⏰ Use Pomodoro technique: 25 min work, 5 min break",
-                "👁️ Extra important to practice 20-20-20 rule"
+        # ==================== OCCUPATION & FIELD-SPECIFIC RECOMMENDATIONS ====================
+        
+        # IT Professional Specific Recommendations
+        if field == 'IT':
+            if work_time in ['More than 6 hours', '5–6 hours']:
+                recommendations['general_wellness_tips'].extend([
+                    "💻 IT PROFESSIONAL ALERT: High work screen time is unavoidable in your field",
+                    "🎯 FOCUS: Since you can't reduce work time, optimize QUALITY of screen usage",
+                    "🪑 CRITICAL: Invest in ergonomic setup - monitor at eye level, proper chair",
+                    "⏰ MANDATORY: Pomodoro technique - 25 min coding, 5 min break (non-negotiable)",
+                    "👁️ DEVELOPER SPECIAL: Use dark themes, increase font size, reduce eye strain",
+                    "🌙 CODE CURFEW: No coding 2 hours before bed - blue light disrupts sleep",
+                    "💪 PROGRAMMER FITNESS: Desk exercises every hour - neck rolls, shoulder shrugs"
+                ])
+                
+                recommendations['app_lock_suggestions'].extend([
+                    "📱 IT WORKER STRATEGY: Since work screen time is high, ELIMINATE recreational screens",
+                    "🚫 ZERO TOLERANCE: No social media during work breaks - use breaks for eye rest",
+                    "📺 EVENING RULE: No entertainment screens after work - your eyes need recovery",
+                    "🎮 GAMING BAN: If you're a developer, avoid gaming - you've had enough screen time",
+                    "📱 PHONE DISCIPLINE: Use phone only for calls/messages, not browsing"
+                ])
+                
+                recommendations['meditation_exercises'].extend([
+                    "🧘 DEVELOPER MEDITATION: 5-minute guided meditation between coding sessions",
+                    "👁️ EYE YOGA: Palming technique - cover eyes with palms for 30 seconds every hour",
+                    "🚶 WALKING MEETINGS: Take calls while walking, not sitting at desk",
+                    "🌿 NATURE BREAKS: Step outside during breaks - no indoor screen alternatives"
+                ])
+            
+            elif work_time in ['3–4 hours']:
+                recommendations['general_wellness_tips'].extend([
+                    "💻 IT PROFESSIONAL: Moderate work screen time - good balance!",
+                    "🎯 MAINTAIN: Keep work screen time focused and efficient",
+                    "👁️ PREVENTION: Use 20-20-20 rule religiously to prevent eye strain",
+                    "🪑 ERGONOMICS: Proper setup prevents long-term issues"
+                ])
+        
+        # Non-IT Professional Recommendations
+        elif field == 'Non-IT':
+            if work_time in ['More than 6 hours', '5–6 hours']:
+                recommendations['general_wellness_tips'].extend([
+                    "💼 NON-IT PROFESSIONAL: High screen time unusual for your field",
+                    "🤔 ANALYZE: Is this screen time truly necessary for your work?",
+                    "📊 OPTIMIZE: Look for ways to reduce digital tasks - use phone calls instead of emails",
+                    "⏰ BATCH WORK: Group screen tasks together, then take longer breaks",
+                    "📝 ANALOG ALTERNATIVES: Use pen and paper when possible",
+                    "🤝 FACE-TO-FACE: Replace video calls with in-person meetings when possible"
+                ])
+        
+        # Student-Specific Recommendations
+        if occupation == 'Student':
+            if work_time in ['More than 6 hours', '5–6 hours']:
+                recommendations['general_wellness_tips'].extend([
+                    "🎓 STUDENT ALERT: High study screen time - balance is crucial",
+                    "📚 STUDY SMART: Use active recall instead of passive screen reading",
+                    "✍️ HANDWRITE NOTES: Better retention and less screen time",
+                    "📖 PHYSICAL BOOKS: Use printed materials when possible",
+                    "👥 STUDY GROUPS: In-person collaboration reduces individual screen time",
+                    "⏰ TIME BLOCKING: 45 min study, 15 min screen-free break"
+                ])
+                
+                recommendations['app_lock_suggestions'].extend([
+                    "📱 STUDENT DISCIPLINE: Block social media during study hours",
+                    "🎯 FOCUS APPS: Use Forest, Cold Turkey during study sessions",
+                    "📺 NO NETFLIX: Entertainment screens compete with study effectiveness",
+                    "🎮 GAMING LIMITS: Maximum 1 hour after completing all studies"
+                ])
+        
+        # Employed Professional Recommendations
+        elif occupation == 'Employed':
+            recommendations['parental_controls'].extend([
+                f"💼 WORKING PROFESSIONAL ({field}): Work-life screen balance is crucial",
+                "⚖️ BOUNDARIES: Strict separation between work and personal screen time",
+                "📵 AFTER-WORK DETOX: No work emails/messages after 6 PM",
+                "🏠 HOME SANCTUARY: Create device-free zones at home"
             ])
+        
+        # Unemployed/Retired Recommendations
+        elif occupation in ['Unemployed', 'Retired']:
+            if total_screen in ['More than 6 hours', '5–6 hours']:
+                recommendations['general_wellness_tips'].extend([
+                    f"🏠 {occupation.upper()} LIFESTYLE: High screen time may indicate boredom/isolation",
+                    "🎯 PURPOSE: Replace screen time with meaningful activities",
+                    "🤝 SOCIAL CONNECTION: Join clubs, volunteer - real-world interaction",
+                    "🌱 HOBBIES: Develop non-digital interests - gardening, crafts, sports",
+                    "📚 LEARNING: Take in-person classes instead of online courses"
+                ])
+
+        # Original work time recommendations (enhanced)
+        if work_time in ['More than 6 hours', '5–6 hours']:
+            # Add field-specific ergonomic advice
+            if field == 'IT':
+                recommendations['general_wellness_tips'].extend([
+                    "💻 IT ERGONOMICS: Monitor 20-26 inches away, top of screen at eye level",
+                    "⌨️ KEYBOARD POSITION: Elbows at 90 degrees, wrists straight",
+                    "🖱️ MOUSE TECHNIQUE: Use whole arm, not just wrist movements"
+                ])
+            else:
+                recommendations['general_wellness_tips'].extend([
+                    "💼 GENERAL ERGONOMICS: Proper chair height, feet flat on floor",
+                    "📱 PHONE POSTURE: Hold phone at eye level to avoid neck strain"
+                ])
         elif work_time in ['3–4 hours']:
-            recommendations['wellness_tips'].append("💼 Moderate work screen time - Maintain good posture")
+            recommendations['general_wellness_tips'].append(f"💼 {field} PROFESSIONAL: Moderate work screen time - maintain good posture")
 
         # ==================== MEDITATION & EXERCISE ====================
         stress = int(user_data.get('stress', 3))
@@ -407,9 +555,86 @@ class RecommendationEngine:
         elif eye_strain >= 3:
             recommendations['meditation_exercises'].append(f"👁️ Moderate eye strain ({eye_strain}/5) - Increase breaks, adjust lighting")
         
-        # ==================== ACCOUNTABILITY & CONTROLS ====================
-        age_group = user_data.get('ageGroup', '')
-        addicted = user_data.get('addicted', '')
+        # ==================== INDUSTRY-SPECIFIC RISK MITIGATION ====================
+        
+        # Create industry-specific risk profiles
+        industry_risk_factors = {
+            'IT': {
+                'unavoidable_screen_time': True,
+                'eye_strain_multiplier': 1.5,
+                'ergonomic_priority': 'critical',
+                'blue_light_exposure': 'extreme',
+                'career_dependency': 'high'
+            },
+            'Non-IT': {
+                'unavoidable_screen_time': False,
+                'eye_strain_multiplier': 1.0,
+                'ergonomic_priority': 'moderate',
+                'blue_light_exposure': 'moderate',
+                'career_dependency': 'low'
+            }
+        }
+        
+        current_industry = industry_risk_factors.get(field, industry_risk_factors['Non-IT'])
+        
+        # Adjust recommendations based on industry risk profile
+        if current_industry['unavoidable_screen_time'] and work_time in ['More than 6 hours', '5–6 hours']:
+            # For IT professionals who CANNOT reduce work screen time
+            recommendations['general_wellness_tips'].insert(0, 
+                "🎯 INDUSTRY REALITY: Your profession requires high screen time - we focus on OPTIMIZATION, not reduction"
+            )
+            
+            # Add specialized IT worker recommendations
+            recommendations['app_lock_suggestions'].insert(0,
+                "💻 IT PROFESSIONAL STRATEGY: Since work screens are unavoidable, ZERO tolerance for recreational screens"
+            )
+            
+            # Enhanced eye care for IT workers
+            if current_industry['eye_strain_multiplier'] > 1.0:
+                recommendations['meditation_exercises'].insert(0,
+                    f"👁️ IT EYE CARE PROTOCOL: Your field has {current_industry['eye_strain_multiplier']}x higher eye strain risk - follow these religiously"
+                )
+        
+        # Career-specific addiction handling
+        if addicted in ['Yes', 'Maybe'] and field == 'IT':
+            recommendations['parental_controls'].insert(0,
+                "💻 IT ADDICTION PARADOX: You need screens for work but feel addicted - separate work and personal usage completely"
+            )
+        
+        # ==================== WORK-LIFE INTEGRATION STRATEGIES ====================
+        
+        # Smart work-life balance based on occupation and field
+        if occupation == 'Employed' and work_time in ['More than 6 hours', '5–6 hours']:
+            work_life_strategies = []
+            
+            if field == 'IT':
+                work_life_strategies.extend([
+                    "⚖️ IT WORK-LIFE SEPARATION: Use different devices for work and personal",
+                    "🖥️ DUAL SETUP: Work computer vs personal computer - never mix",
+                    "📱 PHONE RULES: Work apps only during work hours",
+                    "🌅 DIGITAL SUNRISE: Start work with intention, not mindless browsing",
+                    "🌙 DIGITAL SUNSET: Hard cutoff - no work screens after 7 PM"
+                ])
+            else:
+                work_life_strategies.extend([
+                    "💼 PROFESSIONAL BOUNDARIES: Question if all screen time is truly necessary",
+                    "📞 PHONE FIRST: Call instead of email when possible",
+                    "📝 ANALOG BACKUP: Use paper for brainstorming and planning",
+                    "🤝 IN-PERSON PRIORITY: Face-to-face meetings over video calls"
+                ])
+            
+            recommendations['parental_controls'].extend(work_life_strategies)
+        
+        # Student-specific study optimization
+        if occupation == 'Student' and work_time in ['More than 6 hours', '5–6 hours']:
+            study_optimization = [
+                "📚 STUDY EFFICIENCY: High screen time suggests inefficient study methods",
+                "✍️ ACTIVE LEARNING: Handwrite notes, use flashcards, teach others",
+                "📖 PRINT MATERIALS: Use physical textbooks when possible",
+                "🎯 FOCUSED SESSIONS: 90-minute deep work blocks with 20-minute breaks",
+                "👥 STUDY GROUPS: Collaborative learning reduces individual screen time"
+            ]
+            recommendations['general_wellness_tips'].extend(study_optimization)
         
         # Device addiction concerns
         if addicted == 'Yes':
@@ -446,36 +671,65 @@ class RecommendationEngine:
                 "🤝 Help others who struggle with screen addiction"
             ])
         
-        # Age-specific recommendations
+        # Age-specific recommendations (enhanced with occupation context)
         if age_group in ['18–24']:
-            recommendations['parental_controls'].extend([
-                "👥 Build peer accountability - Share goals with friends your age",
-                "💼 Replace social media time with career skill-building",
-                "🎓 Use screen time for learning valuable skills (coding, languages)",
-                "📱 Your age group is most vulnerable - Be extra vigilant"
-            ])
+            if occupation == 'Student':
+                recommendations['parental_controls'].extend([
+                    "🎓 STUDENT (18-24): Critical time for building healthy digital habits",
+                    "📚 ACADEMIC SUCCESS: Screen discipline directly impacts grades",
+                    "👥 PEER ACCOUNTABILITY: Study groups with screen-time goals",
+                    "💼 CAREER PREP: Develop focus skills employers value"
+                ])
+            else:
+                recommendations['parental_controls'].extend([
+                    "👥 YOUNG PROFESSIONAL: Build peer accountability with colleagues",
+                    "💼 CAREER FOCUS: Replace social media time with skill-building",
+                    "🎯 Your age group is most vulnerable to screen addiction - be vigilant"
+                ])
+        
         elif age_group in ['25–34']:
-            recommendations['parental_controls'].extend([
-                "💼 Prioritize screen time for career advancement over entertainment",
-                "🤝 Create accountability groups with colleagues/friends",
-                "📈 Track how screen habits affect your productivity",
-                "🎯 Set professional development goals over social media"
-            ])
+            if field == 'IT':
+                recommendations['parental_controls'].extend([
+                    "💻 IT PROFESSIONAL (25-34): High-earning potential requires screen discipline",
+                    "🚀 CAREER GROWTH: Focus screen time on learning new technologies",
+                    "⚖️ WORK-LIFE BALANCE: Prevent burnout with strict boundaries"
+                ])
+            else:
+                recommendations['parental_controls'].extend([
+                    "💼 PROFESSIONAL PRIME: Prioritize career-advancing screen usage",
+                    "🤝 INDUSTRY NETWORKING: Use screens for professional development",
+                    "📈 PRODUCTIVITY FOCUS: Track how screen habits affect work performance"
+                ])
+        
         elif age_group in ['35–44', '45–54']:
             recommendations['parental_controls'].extend([
-                "👨‍👩‍👧‍👦 MODEL healthy behavior - Your kids are watching you",
-                "🍽️ Enforce device-free family meals (no phones at table)",
-                "📱 Use Screen Time (iOS) or Family Link (Android) for kids",
-                "📋 Create written family media agreement together",
-                "🎯 Lead family screen time challenges with rewards"
+                f"👨‍👩‍👧‍👦 PARENT & PROFESSIONAL: You're modeling behavior for your children",
+                "🍽️ FAMILY RULES: Device-free meals and family time",
+                "💼 LEADERSHIP: Show younger colleagues healthy screen habits",
+                "📱 PARENTAL CONTROLS: Use Screen Time (iOS) or Family Link (Android)",
+                "🎯 FAMILY CHALLENGES: Create screen-time reduction competitions"
             ])
+            
+            # Add occupation-specific parenting advice
+            if field == 'IT':
+                recommendations['parental_controls'].append(
+                    "💻 IT PARENT SPECIAL: Teach kids that high work screen time doesn't justify recreational excess"
+                )
+        
         elif age_group == '55+':
-            recommendations['parental_controls'].extend([
-                "👨‍👩‍👧‍👦 Set example for younger generations in family",
-                "🎓 Use screen time for learning and staying connected meaningfully",
-                "📱 Balance technology with face-to-face interactions",
-                "💡 Share your wisdom on pre-digital era balance"
-            ])
+            if occupation == 'Retired':
+                recommendations['parental_controls'].extend([
+                    "🏖️ RETIREMENT WISDOM: Use technology to enhance, not replace, real experiences",
+                    "👨‍👩‍👧‍👦 GRANDPARENT ROLE: Model healthy tech use for grandchildren",
+                    "🌍 EXPLORATION: Use screens to plan real-world activities, not replace them",
+                    "🤝 SOCIAL CONNECTION: Video calls with family, but prioritize in-person visits"
+                ])
+            else:
+                recommendations['parental_controls'].extend([
+                    "👨‍👩‍👧‍👦 SENIOR PROFESSIONAL: Mentor younger generations on digital balance",
+                    "💡 WISDOM SHARING: Your pre-digital experience is valuable - share it",
+                    "⚖️ PERSPECTIVE: Balance technology benefits with traditional approaches"
+                ])
         
         # Risk-based final recommendations
         total_risk = risk_scores.get('total_risk', 0)
@@ -492,7 +746,28 @@ class RecommendationEngine:
 
 @app.route('/')
 def home():
-    """Home page with API documentation"""
+    """Serve the main homepage"""
+    try:
+        # Try to serve the frontend index.html file
+        return send_from_directory('../frontend', 'index.html')
+    except:
+        # Fallback to redirect to frontend folder
+        return '''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>ScreenHealth AI</title>
+            <meta http-equiv="refresh" content="0; url=/frontend/index.html">
+        </head>
+        <body>
+            <p>Redirecting to <a href="/frontend/index.html">ScreenHealth AI</a>...</p>
+        </body>
+        </html>
+        '''
+
+@app.route('/api')
+def api_docs():
+    """API documentation"""
     html = """
     <!DOCTYPE html>
     <html>
@@ -535,6 +810,15 @@ def home():
     </html>
     """
     return render_template_string(html)
+
+# Serve static files from frontend directory
+@app.route('/frontend/<path:filename>')
+def serve_frontend(filename):
+    """Serve frontend static files"""
+    try:
+        return send_from_directory('../frontend', filename)
+    except Exception as e:
+        return f"File not found: {filename}", 404
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -1014,7 +1298,7 @@ def generate_report_html(user_data, prediction, recommendations, user_stats, use
                 <h4>🌟 Wellness Tips</h4>
                 <ul>
             """
-            for tip in recommendations['wellness_tips'][:5]:  # Limit to 5 tips
+            for tip in recommendations['general_wellness_tips'][:5]:  # Limit to 5 tips
                 html += f"<li>{tip}</li>"
             html += "</ul></div>"
         

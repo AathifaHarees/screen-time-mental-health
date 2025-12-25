@@ -954,37 +954,85 @@
         function generateRecommendations(formData, results) {
             const container = document.getElementById('recommendationsGrid');
             
-            const recommendations = [
-                {
-                    title: '💡 Wellness Tips',
-                    icon: 'fas fa-heart',
-                    items: generateWellnessTips(formData, results)
-                },
-                {
-                    title: '🔒 App Control',
-                    icon: 'fas fa-mobile-alt',
-                    items: generateAppControlTips(formData)
-                },
-                {
-                    title: '🧘 Mindfulness',
-                    icon: 'fas fa-spa',
-                    items: generateMindfulnessTips(formData)
-                },
-                {
-                    title: '😴 Sleep Hygiene',
-                    icon: 'fas fa-bed',
-                    items: generateSleepTips(formData)
-                }
-            ];
+            // Debug: Log the results to see what we're getting
+            console.log('🔍 DEBUG: formData =', formData);
+            console.log('🔍 DEBUG: results =', results);
+            console.log('🔍 DEBUG: results.recommendations =', results?.recommendations);
             
-            container.innerHTML = recommendations.map(rec => `
-                <div class="recommendation-card">
-                    <h3><i class="${rec.icon}"></i> ${rec.title}</h3>
-                    <ul>
-                        ${rec.items.map(item => `<li>${item}</li>`).join('')}
-                    </ul>
-                </div>
-            `).join('');
+            // Use backend recommendations if available, otherwise fall back to static ones
+            if (results && results.recommendations) {
+                console.log('✅ Using backend recommendations');
+                const backendRecs = results.recommendations;
+                const recommendationCategories = [
+                    {
+                        title: '💡 Wellness Tips',
+                        icon: 'fas fa-lightbulb',
+                        items: backendRecs.general_wellness_tips || []
+                    },
+                    {
+                        title: '📱 App Control Suggestions',
+                        icon: 'fas fa-mobile-alt',
+                        items: backendRecs.app_lock_suggestions || []
+                    },
+                    {
+                        title: '🧘 Mental Health & Exercise',
+                        icon: 'fas fa-heart',
+                        items: backendRecs.meditation_exercises || []
+                    },
+                    {
+                        title: '🎯 Accountability & Controls',
+                        icon: 'fas fa-shield-alt',
+                        items: backendRecs.parental_controls || []
+                    }
+                ];
+                
+                console.log('🔍 DEBUG: recommendationCategories =', recommendationCategories);
+                
+                container.innerHTML = recommendationCategories
+                    .filter(category => category.items.length > 0)
+                    .map(category => `
+                        <div class="recommendation-card">
+                            <h3><i class="${category.icon}"></i> ${category.title}</h3>
+                            <ul>
+                                ${category.items.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `).join('');
+            } else {
+                console.log('⚠️ Using fallback recommendations - backend recommendations not found');
+                // Fallback to static recommendations if backend recommendations not available
+                const recommendations = [
+                    {
+                        title: '💡 Wellness Tips',
+                        icon: 'fas fa-heart',
+                        items: generateWellnessTips(formData, results)
+                    },
+                    {
+                        title: '🔒 App Control',
+                        icon: 'fas fa-mobile-alt',
+                        items: generateAppControlTips(formData)
+                    },
+                    {
+                        title: '🧘 Mindfulness',
+                        icon: 'fas fa-spa',
+                        items: generateMindfulnessTips(formData)
+                    },
+                    {
+                        title: '😴 Sleep Hygiene',
+                        icon: 'fas fa-bed',
+                        items: generateSleepTips(formData)
+                    }
+                ];
+                
+                container.innerHTML = recommendations.map(rec => `
+                    <div class="recommendation-card">
+                        <h3><i class="${rec.icon}"></i> ${rec.title}</h3>
+                        <ul>
+                            ${rec.items.map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                    </div>
+                `).join('');
+            }
         }
 
         function generateWellnessTips(formData, results) {
